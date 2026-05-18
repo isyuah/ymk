@@ -1,6 +1,26 @@
 <template>
 <div class="partContainer DEF-SONGLIST">
     <div class="searchBar">
+      <div class="sourceSelector" @click.stop="showSourceSelector = !showSourceSelector">
+        <div class="currentSource">
+          <span>{{ currentSourceLabel }}</span>
+          <svg :class="{ arrow: true, open: showSourceSelector }" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <path d="M512 650.24 213.76 352 160 405.76l352 352 352-352L810.24 352z" fill="currentColor" />
+          </svg>
+        </div>
+        <Transition name="fade">
+          <div v-show="showSourceSelector" class="sourceOptions">
+            <div
+              v-for="op in sourceOptions"
+              :key="op.value"
+              :class="{ sourceOption: true, active: currentSourceId === op.value }"
+              @click.stop="selectSource(op.value)"
+            >
+              {{ op.label }}
+            </div>
+          </div>
+        </Transition>
+      </div>
         <div class="searchInputContainer">
             <input
             @focus="showSuggestBar = true"
@@ -9,28 +29,13 @@
             @keydown.down.prevent="nextSuggest"
             @input="refreshSuggests"
             ref="searchInput" type="text" placeholder="搜索" />
-            <div class="sourceSelector" @click="showSourceMenu = !showSourceMenu">
-                <span>{{sourceMap[source]}}</span>
-                <span class="arrow" :class="{down: showSourceMenu}">></span>
-                <div class="sourceMenu" v-show="showSourceMenu">
-                    <div 
-                        v-for="(name, key) in sourceMap" 
-                        :key="key"
-                        @click="source = key"
-                        class="sourceItem"
-                        :class="{active: source === key}"
-                    >
-                        {{name}}
-                    </div>
-                </div>
-            </div>
             <div @click="search()" class="searchButton">
                 <svg t="1711784197878" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4252" width="48" height="48"><path d="M454.198549 856.251462c-53.599755 0-105.60827-10.503215-154.582681-31.216979-47.291073-20.00359-89.75828-48.632627-126.219703-85.095074-36.462446-36.462446-65.092507-78.929654-85.095073-126.220726-20.714787-48.974411-31.216979-100.983949-31.216979-154.583705s10.503215-105.60827 31.218002-154.58268c20.002566-47.291073 48.632627-89.757257 85.095074-126.219703 36.462446-36.462446 78.92863-65.092507 126.219703-85.095074C348.59028 72.522734 400.599817 62.019519 454.198549 62.019519s105.60827 10.503215 154.581658 31.218002c47.291073 20.002566 89.75828 48.632627 126.220726 85.095074 36.462446 36.462446 65.091484 78.92863 85.095074 126.219703 20.713764 48.974411 31.216979 100.983949 31.216979 154.58268 0 102.939487-39.223327 200.536292-110.446462 274.812973-9.487072 9.896394-25.200962 10.223852-35.094286 0.736781-9.894348-9.488095-10.223852-25.199938-0.73678-35.094286 62.317301-64.98813 96.635921-150.383032 96.635921-240.455468 0-191.597713-155.87614-347.473853-347.47283-347.473852s-347.472829 155.87614-347.472829 347.473852S262.60186 806.608831 454.198549 806.608831c32.573883 0 64.808028-4.497431 95.808067-13.369495 13.178137-3.765767 26.921139 3.854794 30.692022 17.033955 3.771907 13.179161-3.854794 26.920116-17.033955 30.692023-35.443233 10.143011-72.272024 15.286148-109.466134 15.286148z" fill="currentColor" p-id="4253"></path><path d="M937.143816 960.063829a24.740474 24.740474 0 0 1-17.725709-7.444553l-214.193337-218.475873c-9.596566-9.788947-9.442046-25.50386 0.3469-35.100426 9.78997-9.598612 25.504884-9.441023 35.100426 0.346901l214.193337 218.475873c9.596566 9.788947 9.442046 25.50386-0.346901 35.100426a24.742521 24.742521 0 0 1-17.374716 7.097652z" fill="currentColor" p-id="4254"></path></svg>
             </div>
-            <div v-show="showSuggestBar && searchInput!.value" class="suggestBar">
+            <div v-show="showSuggestBar && searchInput!.value && suggests.length" class="suggestBar">
                 <div
                 @click="acceptSuggest(suggest)"
-                v-for="(suggest, index) in suggests" :class="{suggest:true, active: suggestSelected === index}">{{ suggest }}</div>
+                v-for="(suggest, index) in suggests" :class="{suggest: true, active: suggestSelected === index}">{{ suggest }}</div>
             </div>
         </div>
     </div>
@@ -42,11 +47,10 @@
                 <simplebar data-auto-hide class="simplebar">
                   <div class="searchResultSongTable forbidSelect">
                     <div
-                        @dblclick="tryPlaySong(song as SongTypes.netease)"
+                        @dblclick="tryPlaySong(song)"
+                        @contextmenu.prevent="onSongContextMenu($event, song)"
                         class="song"
-                        :class="{disabled: 'playable' in song && !song.playable}"
                         v-for="(song, index) in resultSongList"
-                        @contextmenu="tryShowSongMenu(song)"
                     >
                       <div class="songInfo songIndex">{{index+1}}</div>
                       <div class="songInfo songTitle singleLineTextEl">{{ song.title }}</div>
@@ -57,23 +61,21 @@
               </div>
             </Transition>
             <Transition name="cube">
-              <Pagination v-show="!paginationLoading" @change-page="changePage" :total="total" v-model:group="nowGroup" v-model="nowPage" class="pagination forbidSelect"></Pagination>
+              <Pagination v-show="!paginationLoading" @change-page="changePage" :total="total" :countInPage="songPageSize" v-model:group="nowGroup" v-model="nowPage" class="pagination forbidSelect"></Pagination>
             </Transition>
           </div>
         <Transition name="cube">
-          <div class="searchResultPart forbidSelect albums" style="grid-column: span 7">
-            <div class="header">
-              专辑
-            </div>
+          <div v-if="hasAlbumAbility" class="searchResultPart forbidSelect albums" style="grid-column: span 7">
+            <div class="header">专辑</div>
             <Transition name="cube">
               <div v-show="!albumLoading" class="main">
-                <div class="albumItem" @click="checkAlbum(album.id)" v-for="album in resultAlbumList">
+                <div class="albumItem" v-for="album in resultAlbumList" @click="openAlbum(album)">
                   <div class="pic">
-                    <img :src="album.coverUrl" alt="">
+                    <img v-if="album.pic" :src="album.pic" alt="">
                   </div>
                   <div class="info singleLineTextEl">
-                    <div class="title singleLineTextEl">{{album.name}}</div>
-                    <div class="intro singleLineTextEl">{{album.artist.name}} <span style="color: #ccc">共{{album.songCount}}首</span></div>
+                    <div class="title singleLineTextEl">{{album.title}}</div>
+                    <div class="intro singleLineTextEl">{{album.artist}} <span style="color: #ccc" v-if="album.songCount">共{{album.songCount}}首</span></div>
                   </div>
                 </div>
               </div>
@@ -81,13 +83,13 @@
           </div>
         </Transition>
         <Transition name="cube">
-          <div class="searchResultPart forbidSelect singers" style="grid-column: span 12">
+          <div v-if="hasArtistAbility" class="searchResultPart forbidSelect singers" style="grid-column: span 12">
             <div class="header">歌手</div>
             <Transition name="cube">
               <div v-show="!singerLoading" class="main">
-                <div @click="checkArtist(singer)" class="singerItem" v-for="singer in resultSingerList">
+                <div class="singerItem" v-for="singer in resultArtistList" @click="openArtist(singer)">
                   <div class="pic">
-                    <img :src="singer.avatarUrl" alt="">
+                    <img referrerpolicy="no-referrer" v-if="singer.pic" :src="singer.pic" alt="">
                   </div>
                   <div class="name singleLineTextEl">{{singer.name}}</div>
                 </div>
@@ -96,15 +98,15 @@
           </div>
         </Transition>
         <Transition name="cube">
-          <div class="searchResultPart forbidSelect playlists" style="grid-column: span 12">
+          <div v-if="hasPlaylistAbility" class="searchResultPart forbidSelect playlists" style="grid-column: span 12">
             <div class="header">歌单</div>
             <Transition name="cube">
               <div v-show="!playlistLoading" class="main">
-                <div @click="checkSearchPlaylist(p)" class="playlistItem" v-for="p in resultPlaylistList">
+                <div class="playlistItem" v-for="p in resultPlaylistList" @click="openPlaylist(p)">
                   <div class="pic">
-                    <img :src="p.coverUrl" alt="">
+                    <img v-if="p.pic" :src="p.pic" alt="">
                   </div>
-                  <div class="name singleLineTextEl">{{p.name}}</div>
+                  <div class="name singleLineTextEl">{{p.title}}</div>
                 </div>
               </div>
             </Transition>
@@ -116,540 +118,249 @@
 </template>
 
 <script setup lang='ts'>
-import {onMounted, onUnmounted, ref, toRaw} from "vue";
+import {computed, onMounted, onUnmounted, ref, toRaw} from "vue";
 import '@/assets/songlist.css'
 import simplebar from "simplebar-vue";
 import 'simplebar-vue/dist/simplebar.min.css'
-import {BasicSongTypeEnum, type song, type SongTypes, type supportSongTypes} from '@/types/song'
-import { type AxiosResponse } from "axios";
 import Pagination from '@/components/Pagination.vue'
+import DSelect from '@/components/DSelect.vue'
 import emitter from "@/emitter";
-import CollectDialog from "@/components/Dialogs/CollectDialog.vue";
-import {neteaseAxios, kugouAxios} from "@/utils/axiosInstances";
-import {useRouter} from "vue-router";
-import {checkDetail, mapCheckSongPlayable, neteaseSongsToSongType} from "@/utils/Toolkit";
+import AddToPlaylistDialog from "@/components/Dialogs/AddToPlaylistDialog.vue";
 import {showDialog} from "@/utils/dialog";
-import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
 import {showContextMenu} from "@/utils/contextMenu";
-import type { SearchSource, UnifiedArtist, UnifiedPlaylist } from '@/types/search';
-import { replacePicSizeParam } from "@/utils/u";
+import {sourceRegistry} from "@/sources/registry";
+import type {SongBase, SourceEntityRef, SearchAlbumItem, SearchArtistItem, SearchPlaylistItem, PaginatedResult} from "@/sources/musicSource";
+import {SourceEntityType} from "@/sources/musicSource";
+import type {RuntimePlaylist} from "@/sources/playlist";
+import {navigateToPlaylistDetail, navigateToAlbumDetail, navigateToArtistDetail} from "@/utils/v2/playlist";
 
-const router = useRouter();
-const runtimeData = useRuntimeDataStore();
-
-// 添加防抖函数
+// --- 防抖 ---
 function debounce(fn: Function, delay: number) {
-    let timer: any = null;
-    return function (this: any, ...args: any[]) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-            fn.apply(this, args);
-        }, delay);
-    }
+  let timer: any = null;
+  return function (this: any, ...args: any[]) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  }
 }
 
-let searchInput = ref<HTMLInputElement>();
-let resultSongList = ref<song[]>([]);
-let resultAlbumList = ref<any[]>([]);
-let resultSingerList = ref<any[]>([]);
-let resultPlaylistList = ref<any[]>([]);
-let total = ref(0);
-let url = `/cloudsearch`;
-let paginationLoading = ref(false);
-let songLoading = ref(false);
-let albumLoading = ref(false);
-let singerLoading = ref(false);
-let playlistLoading = ref(false);
-const nowPage = ref(1)
-const nowGroup = ref(0)
-let showSuggestBar = ref(false);
-const tmpSearchVal = ref('')
-let suggests = ref<string[]>([])
-let suggestSelected = ref(-1);
-const source = ref<SearchSource>('netease');
-const showSourceMenu = ref(false);
-const sourceMap = {
-    netease: '网易云音乐',
-    kugou: '酷狗音乐'
-};
+// --- 源选择（动态，只列出支持 searchSongs 的源） ---
+const searchSources = sourceRegistry.listByCapability('searchSongs');
+const sourceOptions = searchSources.map(s => ({ value: s.id, label: s.name }));
+const currentSourceId = ref<string>(searchSources[0]?.id ?? '');
+const showSourceSelector = ref(false);
+const currentSourceLabel = computed(() => sourceOptions.find(op => op.value === currentSourceId.value)?.label ?? '选择源');
+
+// --- 各区块能力检测 ---
+const hasAlbumAbility = computed(() => sourceRegistry.getSourceAbility(currentSourceId.value, 'searchAlbums')?.available ?? false);
+const hasArtistAbility = computed(() => sourceRegistry.getSourceAbility(currentSourceId.value, 'searchArtists')?.available ?? false);
+const hasPlaylistAbility = computed(() => sourceRegistry.getSourceAbility(currentSourceId.value, 'searchPlaylists')?.available ?? false);
+
+// --- 状态 ---
+const searchInput = ref<HTMLInputElement>();
+const tmpSearchVal = ref('');
+const showSuggestBar = ref(false);
+const suggests = ref<string[]>([]);
+const suggestSelected = ref(-1);
+
+const resultSongList = ref<SongBase[]>([]);
+const resultAlbumList = ref<SearchAlbumItem[]>([]);
+const resultArtistList = ref<SearchArtistItem[]>([]);
+const resultPlaylistList = ref<SearchPlaylistItem[]>([]);
+const total = ref(0);
+/** 歌曲分页大小:由 source 的 searchSongs 返回值决定,跨源会变 */
+const songPageSize = ref(30);
+
+const nowPage = ref(1);
+const nowGroup = ref(0);
+
+const songLoading = ref(false);
+const albumLoading = ref(false);
+const singerLoading = ref(false);
+const playlistLoading = ref(false);
+const paginationLoading = ref(false);
+
+// --- 搜索建议 ---
 function acceptSuggest(text: string) {
   if (!searchInput.value) return;
   searchInput.value.value = text;
   suggestSelected.value = -1;
-  search()
+  search();
 }
+
+const refreshSuggests = debounce(async function () {
+  if (!searchInput.value || !searchInput.value.value) {
+    suggests.value = [];
+    return;
+  }
+  const ability = sourceRegistry.getSourceAbility(currentSourceId.value, 'suggest');
+  if (!ability?.available) { suggests.value = []; return; }
+  try {
+    suggests.value = await ability.invoke(searchInput.value.value);
+    suggestSelected.value = -1;
+    showSuggestBar.value = true;
+  } catch { suggests.value = []; }
+}, 200);
+
+function lastSuggest() { if (suggestSelected.value > -1) suggestSelected.value--; }
+function nextSuggest() { if (suggestSelected.value < suggests.value.length - 1) suggestSelected.value++; }
+
+function selectSource(sourceId: string) {
+  currentSourceId.value = sourceId;
+  showSourceSelector.value = false;
+  suggests.value = [];
+  suggestSelected.value = -1;
+  if (tmpSearchVal.value) doSearch(tmpSearchVal.value, nowPage.value);
+}
+
+// --- 搜索 ---
 function search() {
-    if (searchInput.value) {
-      showSuggestBar.value = false;
-        if (suggestSelected.value === -1) {
-          let query = searchInput.value.value;
-          nowPage.value = 1;
-            if (source.value === 'netease') {
-                getNeteaseSearchResults(query);
-            } else if (source.value === 'kugou') {
-                getKugouSearchResults(query);
-            }
-          tmpSearchVal.value = query;
-        }else {
-            suggestSelected.value = -1;
-            searchInput.value.value = document.querySelector('.suggest.active') ? (<HTMLDivElement>document.querySelector('.suggest.active')).innerText : searchInput.value.value
-        }
-    }
+  if (!searchInput.value) return;
+  showSuggestBar.value = false;
+  if (suggestSelected.value !== -1) {
+    const text = suggests.value[suggestSelected.value];
+    if (text) searchInput.value.value = text;
+    suggestSelected.value = -1;
+  }
+  const query = searchInput.value.value;
+  nowPage.value = 1;
+  nowGroup.value = 0;
+  tmpSearchVal.value = query;
+  doSearch(query, 1);
 }
-function getKugouSearchResults(query: string) {
-  paginationLoading.value = true;
+
+function changePage() { fetchSongs(tmpSearchVal.value, nowPage.value); }
+
+async function fetchSongs(query: string, page: number) {
+  const ability = sourceRegistry.getSourceAbility(currentSourceId.value, 'searchSongs');
+  if (!ability?.available) return;
   songLoading.value = true;
-  albumLoading.value = true;
-  singerLoading.value = true;
-  playlistLoading.value = true;
+  paginationLoading.value = true;
+  try {
+    const res: PaginatedResult<SongBase> = await ability.invoke(query, page, songPageSize.value);
+    resultSongList.value = res.data;
+    total.value = res.total;
+    songPageSize.value = res.pageSize;
+  } catch { resultSongList.value = []; total.value = 0; }
+  finally { songLoading.value = false; paginationLoading.value = false; }
+}
 
-  kugouAxios.get('/search/complex', {
-    params: {
-      keywords: query,
-      page: nowPage.value,
-      pagesize: 30
-    }
-  }).then(res => {
-    console.log(res.data)
-    if (res.data.data.lists) {
-      // 初始化所有结果为空
-      resultSongList.value = [];
-      resultAlbumList.value = [];
-      resultSingerList.value = [];
-      resultPlaylistList.value = [];
-      total.value = 0;
+async function doSearch(query: string, page: number) {
+  if (!query) return;
+  const src = currentSourceId.value;
 
-      const lists = res.data.data.lists;
-      
-      // 处理歌曲搜索结果 (index 0)
-      if (lists[0]?.lists) {
-        resultSongList.value = lists[0].lists.map((song: any) => {
-          return <SongTypes.kugou>{
-            type: 'kugou',
-            symbol: song.FileHash,
-            title: song.SongName,
-            singer: song.SingerName,
-            pic: song.Image
-          }
-        });
-        total.value = lists[0].total || 0;
-      }
-      songLoading.value = false;
+  const tasks: Promise<void>[] = [];
 
-      // 处理歌单搜索结果 (index 4)
-      if (lists[4]?.lists) {
-        resultPlaylistList.value = lists[4].lists.map((playlist: any) => ({
-          id: playlist.gid,
-          name: playlist.specialname,
-          coverUrl: playlist.img,
-          source: 'kugou' as const
-        }));
-      }
-      playlistLoading.value = false;
+  // 歌曲
+  const songAbility = sourceRegistry.getSourceAbility(src, 'searchSongs');
+  if (songAbility?.available) {
+    songLoading.value = true;
+    paginationLoading.value = true;
+    tasks.push(songAbility.invoke(query, page, songPageSize.value)
+      .then((res: PaginatedResult<SongBase>) => {
+        resultSongList.value = res.data;
+        total.value = res.total;
+        songPageSize.value = res.pageSize;
+      })
+      .catch(() => { resultSongList.value = []; total.value = 0; })
+      .finally(() => { songLoading.value = false; paginationLoading.value = false; })
+    );
+  }
 
-      // 处理专辑搜索结果 (index 6)
-      if (lists[6]?.lists) {
-        resultAlbumList.value = lists[6].lists.map((album: any) => ({
-          id: album.albumid,
-          name: album.albumname,
-          coverUrl: album.img,
-          artist: {
-            name: album.singer
-          },
-          songCount: album.songcount || 0,
-          source: 'kugou' as const
-        }));
-      }
-      albumLoading.value = false;
+  // 专辑
+  const albumAbility = sourceRegistry.getSourceAbility(src, 'searchAlbums');
+  if (albumAbility?.available) {
+    albumLoading.value = true;
+    tasks.push(albumAbility.invoke(query, page, 10)
+      .then((res: PaginatedResult<SearchAlbumItem>) => { resultAlbumList.value = res.data; })
+      .catch(() => { resultAlbumList.value = []; })
+      .finally(() => { albumLoading.value = false; })
+    );
+  } else { resultAlbumList.value = []; }
 
-      // 处理歌手搜索结果 (index 10)
-      if (lists[10]?.lists) {
-        resultSingerList.value = lists[10].lists.map((singer: any) => ({
-          id: singer.AuthorId,
-          name: singer.AuthorName,
-          avatarUrl: singer.Avatar,
-          source: 'kugou' as const
-        }));
-      }
-      singerLoading.value = false;
-    }
-  }).catch(e => {
-    console.error('搜索失败:', e);
-    // 清空所有结果
-    resultSongList.value = [];
-    resultAlbumList.value = [];
-    resultSingerList.value = [];
-    resultPlaylistList.value = [];
-    total.value = 0;
-  }).finally(() => {
-    console.log('#song#', resultSongList.value);
-      console.log('#singer#', resultSingerList.value);
-      console.log('#album#', resultAlbumList.value);
-      console.log('#playlist#', resultPlaylistList.value);
-    songLoading.value = false;
-    albumLoading.value = false;
-    singerLoading.value = false;
-    playlistLoading.value = false;
-    paginationLoading.value = false;
+  // 歌手
+  const artistAbility = sourceRegistry.getSourceAbility(src, 'searchArtists');
+  if (artistAbility?.available) {
+    singerLoading.value = true;
+    tasks.push(artistAbility.invoke(query, page, 10)
+      .then((res: PaginatedResult<SearchArtistItem>) => { resultArtistList.value = res.data; })
+      .catch(() => { resultArtistList.value = []; })
+      .finally(() => { singerLoading.value = false; })
+    );
+  } else { resultArtistList.value = []; }
+
+  // 歌单
+  const playlistAbility = sourceRegistry.getSourceAbility(src, 'searchPlaylists');
+  if (playlistAbility?.available) {
+    playlistLoading.value = true;
+    tasks.push(playlistAbility.invoke(query, page, 10)
+      .then((res: PaginatedResult<SearchPlaylistItem>) => { resultPlaylistList.value = res.data; })
+      .catch(() => { resultPlaylistList.value = []; })
+      .finally(() => { playlistLoading.value = false; })
+    );
+  } else { resultPlaylistList.value = []; }
+
+  await Promise.all(tasks);
+}
+
+// --- 播放 & 右键菜单 ---
+function tryPlaySong(song: SongBase) { emitter.emit('playSongV2', song, true); }
+
+function onSongContextMenu(e: MouseEvent, song: SongBase) {
+  showContextMenu<{ song: SongBase }>({
+    position: { left: e.clientX, top: e.clientY },
+    items: [
+      {
+        title: '播放',
+        action: ({ song }) => emitter.emit('playSongV2', song),
+      },
+      {
+        title: '添加到歌单',
+        action: ({ song }) => showDialog(AddToPlaylistDialog, { song }),
+      },
+    ],
+    args: { song },
   });
 }
-function getNeteaseSearchResults(query: string, offset = 0) {
-  const types = [10, 100, 1000];
-  let tasks = [];
-  paginationLoading.value = true;
-  tasks.push(getSearchSongResult(query))
-  for (let type of types) {
-    if (type === 10) {
-      albumLoading.value = true;
-    }
-    if (type === 100) {
-      singerLoading.value = true;
-    }
-    if (type === 1000) {
-      playlistLoading.value = true;
-    }
-    tasks.push(new Promise<void>((resolve, reject) => {
-      neteaseAxios.get(url, {
-        params: {
-          keywords: query,
-          type,
-          limit: 10,
-        }
-      }).then(res => {
-        if (type === 10) {
-          resultAlbumList.value = (res.data.result.albums || []).map((album: any) => ({
-            id: album.id,
-            name: album.name,
-            coverUrl: album.picUrl,
-            artist: {
-              name: album.artist.name
-            },
-            songCount: album.size || 0,
-            source: 'netease' as const
-          }));
-          albumLoading.value = false;
-        }
-        if (type === 100) {
-          resultSingerList.value = (res.data.result.artists || []).map((artist: any) => ({
-            id: artist.id,
-            name: artist.name,
-            avatarUrl: artist.picUrl,
-            source: 'netease' as const
-          }));
-          singerLoading.value = false;
-        }
-        if (type === 1000) {
-          resultPlaylistList.value = (res.data.result.playlists || []).map((playlist: any) => ({
-            id: playlist.id,
-            name: playlist.name,
-            coverUrl: playlist.coverImgUrl,
-            source: 'netease' as const
-          }));
-          playlistLoading.value = false;
-        }
-        resolve();
-      }).catch((e) => {
-        albumLoading.value = false;
-        singerLoading.value = false;
-        playlistLoading.value = false;
-        reject(e);
-      })
-    }))
-  }
-  Promise.all(tasks).then(() => {
-    console.log('#song#', resultSongList.value);
-    console.log('#singer#', resultSingerList.value);
-    console.log('#album#', resultAlbumList.value);
-    console.log('#playlist#', resultPlaylistList.value);
-  })
-}
-function getSearchSongResult(query: string, offset = 0) {
-  return new Promise<void>((resolve, reject) => {
-    songLoading.value = true;
-    neteaseAxios.get(url, {
-      params: {
-        keywords: query,
-        offset: offset,
-      },
-    }).then((res: AxiosResponse) => {
-      if (res.data.result.songs) {
-        let result = res.data.result.songs
-        mapCheckSongPlayable(result)
-        resultSongList.value = result.map((song: any) => {
-          return <song>{
-            type: 'netease',
-            title: song.name,
-            symbol: song.id,
-            singer: song.ar.map((ar: any) => ar.name).join(' & '),
-            playable: song.playable,
-            reason: song.reason
-          }
-        })
-        total.value = res.data.result.songCount || 0;
-        resolve();
-      }
-    }).catch((e) => {
-      reject(e)
-    }).finally(() => {
-      songLoading.value = false;
-      paginationLoading.value = false;
-    })
-  })
-}
-function changePage() {
-  if (source.value === 'netease') {
-    getSearchSongResult(tmpSearchVal.value, (nowPage.value - 1) * 30);
-  } else if (source.value === 'kugou') {
-    getKugouSearchResults(tmpSearchVal.value);
-  }
-}
-function lastSuggest() {
-    if (suggestSelected.value > -1) {
-        suggestSelected.value--;
-    }
-}
-function nextSuggest() {
-    if (suggestSelected.value < 5) {
-        suggestSelected.value++;
-    }
-}
-const refreshSuggests = debounce(async function () {
-    if (!searchInput.value || !searchInput.value.value) {
-        suggests.value = [];
-        return;
-    }
 
-    const query = searchInput.value.value;
-    
-    try {
-        if (source.value === 'netease') {
-            const res = await neteaseAxios.get('/search/suggest', {
-                params: {
-                    keywords: query,
-                    type: 'mobile'
-                }
-            });
-            if (res.data.result.allMatch) {
-                suggests.value = res.data.result.allMatch.slice(0, 6).map((match: any) => match.keyword);
-            } else {
-                suggests.value = [];
-            }
-        } else if (source.value === 'kugou') {
-            const res = await kugouAxios.get('/search/suggest', {
-                params: {
-                    keywords: query
-                }
-            });
-            if (res.data.data && res.data.data[0]?.RecordDatas) {
-                suggests.value = res.data.data[0].RecordDatas.slice(0, 6).map((item: any) => item.HintInfo);
-            } else {
-                suggests.value = [];
-            }
-        }
-        suggestSelected.value = -1;
-        showSuggestBar.value = true;
-    } catch (error) {
-        console.error('获取搜索建议失败:', error);
-        suggests.value = [];
-    }
-}, 200);
-function tryShowSongMenu(song: song) {
-  showContextMenu({
-    menuItems: [{
-      title: '添加到...',
-      action: () => {
-        showDialog(CollectDialog, {
-          waitCollect: structuredClone(toRaw(song))
-        })
-      }
-    },{
-      title: '复制symbol',
-      action: () => {
-        navigator.clipboard.writeText(song.symbol)
-      }
-    }]
-  })
+// --- 搜索结果点击 ---
+function openAlbum(album: SearchAlbumItem) {
+  const ref: SourceEntityRef = { sourceType: currentSourceId.value, symbol: album.id, type: SourceEntityType.Album };
+  navigateToAlbumDetail(ref);
 }
-function tryPlaySong(song: SongTypes.netease) {
-  emitter.emit('playSong', {song, justtry: true})
+function openArtist(artist: SearchArtistItem) {
+  const ref: SourceEntityRef = { sourceType: currentSourceId.value, symbol: artist.id, type: SourceEntityType.Artist };
+  navigateToArtistDetail(ref);
 }
-function checkSearchPlaylist(playlist: UnifiedPlaylist) {
-  console.log("#checkPlaylist#", playlist)
-  checkDetail(-2, {
-    title: playlist.name,
-    pic: playlist.coverUrl,
-    intro: 'SEARCH PREVIEW',
-    originFilename: 'REMOTE',
-    playlist: [{
-      type: `trace_${playlist.source}_playlist` as const,
-      id: playlist.id,
-    }],
-    type: 'search_result'
-  })
-  console.log("#checkPlaylist#", {
-    title: playlist.name,
-    pic: playlist.coverUrl,
-    intro: 'SEARCH PREVIEW',
-    originFilename: 'REMOTE',
-    playlist: [{
-      type: `trace_${playlist.source}_playlist` as const,
-      id: playlist.id,
-    }]
-  })
+function openPlaylist(playlist: SearchPlaylistItem) {
+  const ref: SourceEntityRef = { sourceType: currentSourceId.value, symbol: playlist.id, type: SourceEntityType.Playlist };
+  const rp: RuntimePlaylist = {
+    document: {
+      SchemaVersion: 2,
+      title: playlist.title,
+      pic: playlist.pic ?? '',
+      entries: [{ kind: 'playlistRef', ref }],
+    },
+    metadata: {
+      origin: ref,
+      status: { loading: false },
+    },
+  };
+  navigateToPlaylistDetail(rp);
 }
+
+// --- 全局点击关闭 ---
 onMounted(() => {
   const l = (e: Event) => {
-    if ((e.target as HTMLElement).tagName !== 'INPUT' && 
+    if ((e.target as HTMLElement).tagName !== 'INPUT' &&
         !(e.target as HTMLElement).classList.contains('suggest') &&
         !(e.target as HTMLElement).closest('.sourceSelector')) {
       showSuggestBar.value = false;
-      showSourceMenu.value = false;
+      showSourceSelector.value = false;
     }
   };
-  document.body.addEventListener('click', l)
-  onUnmounted(() => {
-    document.body.removeEventListener('click', l)
-  })
-})
-
-async function checkAlbum(id: string) {
-  router.push('/loading')
-  if (source.value === 'netease') {
-    neteaseAxios.get(`/album?id=${id}`).then((res) => {
-      if (res.data.code !== 200) return
-      console.log("#checkAlbum#", res.data)
-      runtimeData.albumPreview.info = {
-        title: res.data.album.name,
-        pic: res.data.album.picUrl,
-        creator: res.data.album.artist.name,
-        intro: res.data.album.briefDesc
-      }
-      runtimeData.albumPreview.songs = neteaseSongsToSongType(res.data.songs)
-      router.push('/albumPreview')
-    })
-  } else if (source.value === 'kugou') {
-    try {
-      const res = await kugouAxios.get(`/album/detail?id=${id}`);
-      if (res.data.status !== 1) return;
-      console.log("#checkAlbum#", res.data)
-      runtimeData.albumPreview.info = {
-        title: res.data.data[0].album_name,
-        pic: replacePicSizeParam(res.data.data[0].sizable_cover),
-        creator: res.data.data[0].author_name,
-        intro: res.data.data[0].intro
-      }
-      
-      // 获取专辑歌曲列表
-      const songsRes = await kugouAxios.get(`/album/songs?id=${id}`);
-      if (songsRes.data.status === 1) {
-        runtimeData.albumPreview.songs = songsRes.data.data.songs.map((song: any) => ({
-          type: 'kugou',
-          title: song.base.audio_name,
-          hash: song.audio_info.hash,
-          singer: song.base.author_name,
-          pic: song.album_info.cover
-        }));
-      }
-      
-      router.push('/albumPreview')
-    } catch (error) {
-      console.error('获取专辑信息失败:', error);
-    }
-  }
-}
-
-async function checkArtist(singer: UnifiedArtist) {
-  console.log('#singer#', singer)
-  router.push('/loading')
-  runtimeData.loading.text = '加载歌手信息中...'
-  
-  if (singer.source === 'netease') {
-    try {
-      const artistInfo = await neteaseAxios.get(`/artist/detail?id=${singer.id}`)
-      if (artistInfo.data.code !== 200) return
-
-      runtimeData.artistPreview.info = {
-        name: singer.name,
-        pic: artistInfo.data.data.artist.avatar,
-        description: artistInfo.data.data.artist.briefDesc || '',
-        id: singer.id
-      }
-
-      let allSongs: any[] = []
-      let offset = 0
-      let hasMore = true
-
-      while (hasMore) {
-        runtimeData.loading.text = `加载歌手歌曲中...(${allSongs.length})`
-        const songs = await neteaseAxios.get(`/artist/songs?id=${singer.id}&limit=100&offset=${offset}`)
-        if (songs.data.code !== 200) break
-
-        allSongs = allSongs.concat(songs.data.songs)
-        hasMore = songs.data.more
-        offset += 100
-      }
-
-      runtimeData.artistPreview.songs = allSongs.map((song: any) => ({
-        type: BasicSongTypeEnum.netease,
-        title: song.name,
-        symbol: song.id,
-        singer: song.ar.map((ar: any) => ar.name).join(' & '),
-      }))
-
-      router.push('/artistPreview')
-    } catch (error) {
-      console.error('加载歌手信息失败:', error)
-      runtimeData.loading.text = '加载失败'
-    }
-  } else if (singer.source === 'kugou') {
-    try {
-      const artistInfo = await kugouAxios.get(`/artist/detail?id=${singer.id}`);
-      if (artistInfo.data.status !== 1) return;
-      runtimeData.artistPreview.songs = [];
-      runtimeData.artistPreview.info = {
-        name: artistInfo.data.data.author_name,
-        pic: replacePicSizeParam(artistInfo.data.data.sizable_avatar),
-        description: artistInfo.data.data.intro || '',
-        id: singer.id
-      }
-
-      let currentAmount =  0
-      let page = 1
-      let total = 0
-      let sign = false
-      while (currentAmount < total || !sign) {
-        sign = true
-        const songsRes = await kugouAxios.get(`/artist/audios?id=${singer.id}`, {
-          params: {
-            page,
-            pagesize: 30
-          }
-        });
-        if (songsRes.data.status === 1 && songsRes.data.data) {
-          runtimeData.artistPreview.songs.push(...songsRes.data.data.map((song: any) => ({
-            type: 'kugou',
-            title: song.audio_name,
-            hash: song.hash,
-            singer: song.author_name,
-            pic: song.trans_param.union_cover
-          })))
-          page++;
-          total = songsRes.data.total;
-          currentAmount += songsRes.data.data.length;
-          runtimeData.loading.text = `加载歌手歌曲中...(${currentAmount} / ${total})`
-          // console.log(page, total, currentAmount, songsRes)
-          // if (page > 5) break;
-        }
-      }
-
-      router.push('/artistPreview')
-    } catch (error) {
-      console.error('加载歌手信息失败:', error);
-      runtimeData.loading.text = '加载失败'
-    }
-  }
-}
-
+  document.body.addEventListener('click', l);
+  onUnmounted(() => document.body.removeEventListener('click', l));
+});
 </script>
 
 <style scoped>
@@ -666,6 +377,7 @@ async function checkArtist(singer: UnifiedArtist) {
     align-items: center;
 }
 .searchBar .searchInputContainer {
+  align-self: center;
     width: 50%;
     position: relative;
 }
@@ -679,6 +391,7 @@ async function checkArtist(singer: UnifiedArtist) {
     width: 100%;
     color: var(--ymk-text-color);
     padding: 5px 10px;
+    padding-right: 150px;
     font-family: SourceSansCNM;
 }
 .searchBar .searchButton {
@@ -712,6 +425,7 @@ async function checkArtist(singer: UnifiedArtist) {
     white-space: nowrap;
     word-break: break-all;
     transition: all .15s;
+    cursor: pointer;
 }
 .searchBar .searchInputContainer .suggestBar .suggest.active {
     background-color: rgba(0,0,0,.6);
@@ -750,9 +464,7 @@ async function checkArtist(singer: UnifiedArtist) {
   box-shadow: 0 0 5px var(--ymk-container-bg-color);
   backdrop-filter: blur(2px);
   color: #fff;
-}
-.searchResultSongTable .song.disabled {
-  color: #aaa
+  height: 100%;
 }
 .searchResultSongTable {
   color: var(--ymk-text-color);
@@ -772,11 +484,6 @@ async function checkArtist(singer: UnifiedArtist) {
   color: #eee;
   font-weight: bold;
 }
-
-.searchResultPart {
-  height: 100%;
-}
-
 .searchResultPart.albums {
   display: flex;
   flex-direction: column;
@@ -852,53 +559,86 @@ async function checkArtist(singer: UnifiedArtist) {
 .searchResultPart.singers .main .pic, .searchResultPart.playlists .main .pic {
   width: 100%;
 }
+
 .sourceSelector {
-    position: absolute;
-    right: 30px;
-    top: 2px;
-    height: 28px;
-    line-height: 28px;
-    padding: 0 10px;
-    cursor: pointer;
-    color: var(--ymk-text-color);
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+  color: var(--ymk-text-color);
+  position: relative;
+  width: 132px;
+  margin-right: 18px;
+  font-family: SourceSansCNM;
+  user-select: none;
+  z-index: 103;
 }
-
+.sourceSelector .currentSource {
+  height: 38px;
+  padding: 0 12px 0 14px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 19px;
+  background: rgba(0,0,0,.22);
+  box-shadow: 0 6px 18px rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.04);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all .18s;
+}
+.sourceSelector .currentSource:hover {
+  border-color: rgba(255,255,255,.42);
+  background: rgba(255,255,255,.08);
+}
+.sourceSelector .currentSource span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
 .sourceSelector .arrow {
-    display: inline-block;
-    transform: rotate(90deg);
-    transition: transform 0.2s;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-left: 8px;
+  opacity: .78;
+  transition: transform .18s;
 }
-
-.sourceSelector .arrow.down {
-    transform: rotate(180deg);
+.sourceSelector .arrow.open {
+  transform: rotate(180deg);
 }
-
-.sourceMenu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: var(--ymk-container-bg-color);
-    border: 1px solid var(--ymk-text-color);
-    border-radius: 4px;
-    min-width: 120px;
-    z-index: 103;
+.sourceSelector .sourceOptions {
+  position: absolute;
+  left: 0;
+  top: 46px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 14px;
+  background: rgba(18,18,18,.72);
+  box-shadow: 0 12px 28px rgba(0,0,0,.32);
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-
-.sourceItem {
-    padding: 8px 15px;
-    transition: all 0.2s;
+.sourceSelector .sourceOption {
+  height: 34px;
+  line-height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all .15s;
 }
-
-.sourceItem:hover, .sourceItem.active {
-    background-color: rgba(0,0,0,.35);
-    color: #fff;
+.sourceSelector .sourceOption:hover {
+  background: rgba(255,255,255,.1);
+  color: #fff;
 }
-
-.searchBar input {
-    padding-right: 100px;
+.sourceSelector .sourceOption.active {
+  background: rgba(255,255,255,.18);
+  color: #fff;
 }
 </style>

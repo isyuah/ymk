@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import path from "path";
+import path from "node:path";
 import {clipboard, dialog, shell} from "electron";
 
 export function getLocalPlaylists() {
@@ -23,10 +23,26 @@ export function showAskDialog(_, options) {
   })
 }
 export function writePlaylistFile(_, {fn, t}) {
-  return fs.writeFileSync(path.resolve('./res/lists', fn), t)
+  return fs.writeFileSync(path.resolve('./res/lists', fn), JSON.stringify(t))
 }
 export function deletePlaylistFile(_, fn) {
   return fs.rmSync(path.resolve('./res/lists', fn))
+}
+export function renamePlaylistFile(_, {fn, newName}) {
+  const filePath = path.resolve('./res/lists', fn)
+  const content = JSON.parse(fs.readFileSync(filePath).toString())
+  content.title = newName
+  fs.writeFileSync(filePath, JSON.stringify(content))
+}
+export function appendToPlaylistFile(_, {fn, song}) {
+  const filePath = path.resolve('./res/lists', fn)
+  const content = JSON.parse(fs.readFileSync(filePath).toString())
+  if (content.entries?.[0]?.kind === 'inlineSongs') {
+    content.entries[0].songs.unshift(song)
+  } else {
+    content.entries.unshift({ kind: 'inlineSongs', songs: [song] })
+  }
+  fs.writeFileSync(filePath, JSON.stringify(content))
 }
 export function getConfig() {
   return JSON.parse(fs.readFileSync(path.resolve('./res', 'config.json')).toString())
@@ -45,4 +61,16 @@ export function readClipboard() {
 }
 export function openUrl(_, url) {
   shell.openExternal(url)
+}
+
+export function saveSourceStorage(_, data) {
+  return fs.writeFileSync(path.resolve("./res", "source-storage.json"), data)
+}
+export function readSourceStorage() {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve("./res", "source-storage.json")).toString())
+  } catch (e) {
+    console.warn(e.message)
+    return {}
+  }
 }

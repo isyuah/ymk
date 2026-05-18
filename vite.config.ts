@@ -17,12 +17,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  optimizeDeps: {
+    exclude: ['NeteaseCloudMusicApi'],
+  },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
         lyric: resolve(__dirname, 'lyric.html'),
       }
     }
-  }
+  },
 })

@@ -1,13 +1,5 @@
 <template>
-  <div class="colorSetter" :style="{
-    '--ymk-color': config.colors.elColor,
-    '--ymk-text-color': config.colors.textColor,
-    '--ymk-progress-bg-color': config.colors.progressBgColor,
-    '--ymk-progress-fill-color': config.colors.progressFillColor,
-    '--ymk-progress-choose-fill-color': config.colors.progressChooseFillColor,
-    '--ymk-text-shadow-color': config.colors.textShadowColor,
-    '--ymk-container-bg-color': config.colors.containerBgColor,
-  }" @drop.prevent="dropEvent" @dragover.prevent>
+  <div class="colorSetter" :style="colorVars" @drop.prevent="dropEvent" @dragover.prevent>
     <div v-if="backgroundType" class="backgroundFrame forbidSelect">
       <div class="mask" :style="`background-color: rgba(0,0,0,${config.maskOpacity});`"></div>
       <img :src="config.bg" v-if="backgroundType === 'img'">
@@ -21,14 +13,12 @@
         <Transition appear name="fade">
           <div style="-webkit-app-region: no-drag;" v-show="!runtimeData.showFullPlay" class="tabs allPointerEvents">
             <RouterLink to="/playlist" :class="{tab: true, active: runtimeData.nowTab === 'playlist'}">首页</RouterLink>
-            <RouterLink to="/recommendedPlaylists" :class="{tab: true, active: runtimeData.nowTab === 'recommendedPlaylists'}">推荐</RouterLink>
-            <RouterLink to="/playlistDetail" v-if="runtimeData.playlist.listIndex !== -1" :class="{tab: true, active: runtimeData.nowTab === 'playlistDetail'}">歌单</RouterLink>
-            <RouterLink @contextmenu.prevent="previewContextMenu('album')" to="/albumPreview" v-if="runtimeData.albumPreview.info.title !== ''" :class="{tab: true, active: runtimeData.nowTab === 'albumPreview'}">专辑</RouterLink>
-            <RouterLink @contextmenu.prevent="previewContextMenu('artist')" to="/artistPreview" v-if="runtimeData.artistPreview.info.id !== ''" :class="{tab: true, active: runtimeData.nowTab === 'artistPreview'}">歌手</RouterLink>
+<!--            <RouterLink to="/recommendedPlaylists" :class="{tab: true, active: runtimeData.nowTab === 'recommendedPlaylists'}">推荐</RouterLink>-->
+            <RouterLink to="/playlistDetail" v-if="runtimeData.currentPlaylist" :class="{tab: true, active: runtimeData.nowTab === 'playlistDetail'}">{{ detailTabLabel }}</RouterLink>
             <RouterLink to="/search" :class="{tab: true, active: runtimeData.nowTab === 'search'}">搜索</RouterLink>
             <RouterLink to="/userCenter" :class="{tab: true, active: runtimeData.nowTab === 'userCenter'}">
-              <div class="text">{{ user.neteaseUser.nickname || '用户' }}</div>
-              <img v-if="user.neteaseUser.avatarUrl" style="border-radius: 50%;margin-left: 4px;margin-top:6px; height: 28px;" :src="user.neteaseUser.avatarUrl" alt="">
+              <div class="text">用户</div>
+<!--              <img v-if="user.neteaseUser.avatarUrl" style="border-radius: 50%;margin-left: 4px;margin-top:6px; height: 28px;" :src="user.neteaseUser.avatarUrl" alt="">-->
             </RouterLink>
             <RouterLink to="/settings" :class="{tab: true, active: runtimeData.nowTab === 'Settings'}">设置</RouterLink>
           </div>
@@ -39,12 +29,22 @@
         </div>
       </div>
       <div class="content">
-        <router-view v-slot="{ Component }">
-          <transition v-show="!runtimeData.showFullPlay" appear name="uianim">
-            <keep-alive :exclude="['UserCenter', 'PlaylistDetail', 'Settings']">
-              <component :is="Component" />
-            </keep-alive>
-          </transition>
+        <router-view v-slot="{ Component, route }">
+          <Transition name="fade">
+            <Loading v-if="loadingStore.isLoading" />
+          </Transition>
+          <div v-show="!runtimeData.showFullPlay" class="route-content">
+            <transition name="uianim">
+              <keep-alive :exclude="['UserCenter', 'PlaylistDetail', 'Settings']">
+                <Suspense>
+                  <component :is="Component" :key="route.fullPath" />
+                  <template #fallback>
+                    <Loading />
+                  </template>
+                </Suspense>
+              </keep-alive>
+            </transition>
+          </div>
         </router-view>
       </div>
       <Playbar></Playbar>
@@ -62,9 +62,15 @@ import FullPlay from '@/pages/FullPlay.vue'
 import Playbar from '@/pages/Playbar.vue'
 import emitter from '@/emitter';
 const {exit, minimize} = window.ymkAPI
-const user = useUserStore();
 const player = usePlayerStore();
 const videoBg = useTemplateRef('videoBg')
+const config = useConfigStore();
+const colorVars = computed(() => {
+  return Object.entries(config.colors).reduce((acc, [key, value]) => {
+    acc[`--ymk-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`] = value;
+    return acc;
+  }, {} as Record<string, string>);
+});
 const backgroundType = computed(() => {
   if (!config.bg) return 'img'
   if (config.bg.endsWith(".mp4")) return "video"
@@ -85,57 +91,27 @@ if ("mediaSession" in navigator) {
   navigator.mediaSession.setActionHandler("nexttrack", () => emitter.emit('playNextSong'))
 }
 const runtimeData = useRuntimeDataStore()
-const config = useConfigStore()
-watch(() => user.neteaseUser.auth, (nv) => {
-  document.cookie = nv;
-})
+const loadingStore = useLoadingStore()
 
-import {useUserStore} from "@/stores/modules/user";
+const detailTabLabel = computed(() => {
+  const mode = (runtimeData.currentPlaylist as any)?.extra?.displayMode;
+  if (mode === 'album') return '专辑';
+  if (mode === 'artist') return '歌手';
+  return '歌单';
+});
+
 import {usePlayerStore} from "@/stores/modules/player";
 import {useConfigStore} from "@/stores/modules/config";
-import {showContextMenu} from "@/utils/contextMenu";
 import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
 import router from "@/router";
 import {refreshPlaylists} from "@/utils/Toolkit";
+import Loading from "@/pages/Loading.vue";
+import {useLoadingStore} from "@/stores/modules/loading";
 
-refreshPlaylists({notReset: false});
+refreshPlaylists();
 
 function dropEvent(e: DragEvent) {
   console.log(e)
-}
-function previewContextMenu(type: string) {
-  showContextMenu({
-    menuItems: [
-      {
-        title: "关闭",
-        action: (arg) => {
-          if (arg === "album") {
-            runtimeData.albumPreview = runtimeData.albumPreview = {
-              songs: [],
-              info: {
-                title: "",
-                creator: "",
-                pic: "",
-                intro: '',
-              }
-            }
-          }else if (arg === "artist") {
-            runtimeData.artistPreview = {
-              songs: [],
-              info: {
-                name: "",
-                description: "",
-                pic: "",
-                id: ""
-              }
-            }
-          }
-          router.push('/playlist')
-        }
-      }
-    ],
-    args: type
-  })
 }
 </script>
 
@@ -176,7 +152,7 @@ body {
   display: grid;
   grid-template-rows: 64px 1fr 64px;
   flex-direction: column;
-  font-family: HarmonyOS Sans;
+  font-family: "HarmonyOS Sans";
   /* border-radius: 4px; */
   width: 100vw;
   height: 100vh;
@@ -194,7 +170,7 @@ body {
   font-size: 22px;
   margin-left: 24px;
   line-height: 32px;
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
   width: 150px;
 }
 .header .controlbtn {
@@ -206,7 +182,7 @@ body {
   z-index: 100;
 }
 .header .controlbtn .btn {
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
   width: 32px;
   height: 32px;
   line-height: 1;
@@ -222,6 +198,10 @@ body {
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+.route-content {
+  width: 100%;
+  height: 100%;
 }
 .header .tabs {
     display: flex;
@@ -242,6 +222,6 @@ body {
   display: inline-block;
 }
 .header .tab.active {
-    border-bottom: 4px solid var(--ymk-color);
+    border-bottom: 4px solid var(--ymk-el-color);
 }
 </style>

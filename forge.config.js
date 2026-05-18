@@ -21,6 +21,8 @@ export default {
         /^\/\.vscode(\/|$)/,
         /^\/ignoreFolder(\/|$)/,
         /^\/res(\/|$)/,
+        /^\/plugins(\/|$)/,
+        /^\/packages(\/|$)/,
 
         // Root files (mirrors release/clean.js)
         /^\/\.gitignore$/,

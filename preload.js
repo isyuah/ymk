@@ -12,8 +12,14 @@ function showChoosePlaylistDialog(options) {
 function deletePlaylistFile(fn) {
     return ipcRenderer.invoke('deletePlaylistFile', fn)
 }
-function writePlaylistFile(fn, t) {
-    return ipcRenderer.invoke('writePlaylistFile', {fn, t})
+function renamePlaylistFile(fn, newName) {
+    return ipcRenderer.invoke('renamePlaylistFile', {fn, newName})
+}
+function appendToPlaylistFile(fn, song) {
+    return ipcRenderer.invoke('appendToPlaylistFile', {fn, song})
+}
+function writePlaylistFile(filename, content) {
+    return ipcRenderer.invoke('writePlaylistFile', {fn: filename, t: content})
 }
 function getConfig() {
     return ipcRenderer.invoke('getConfig')
@@ -59,6 +65,20 @@ function onTrayControl_PlayPause(callback) {
 function onTrayControl_PlaySong(callback) {
     ipcRenderer.on('tray_play', callback)
 }
+function saveSourceStorage(data) {
+    return ipcRenderer.invoke('saveSourceStorage', JSON.stringify(data))
+}
+function readSourceStorage() {
+    return ipcRenderer.invoke('readSourceStorage')
+}
+function loadPlugins() {
+    return ipcRenderer.invoke('loadPlugins').then(list =>
+        list.map(({ name, code }) => {
+            const blob = new Blob([code], { type: 'text/javascript' })
+            return { name, url: URL.createObjectURL(blob) }
+        })
+    )
+}
 const apis = {
     onTrayControl_PlayPause,
     onTrayControl_PlaySong,
@@ -67,6 +87,8 @@ const apis = {
     showAskDialog,
     showChoosePlaylistDialog,
     deletePlaylistFile,
+    renamePlaylistFile,
+    appendToPlaylistFile,
     writePlaylistFile,
     readClipboard,
     writeConfig,
@@ -91,5 +113,27 @@ const apis = {
     sendLyric: (lyric) => ipcRenderer.invoke('sendLyric', lyric),
     toggleLyricWindow: () => ipcRenderer.invoke('toggleLyricWindow'),
     openUrl,
+    saveSourceStorage,
+    readSourceStorage,
+    loadPlugins,
 }
 contextBridge.exposeInMainWorld('ymkAPI', apis)
+contextBridge.exposeInMainWorld('NeteaseAPI', {
+    // Proxy不能被克隆，直接定义一个通用的执行函数
+    call: (funcName, ...args) => {
+        return ipcRenderer.invoke('NeteaseAPIProxy', {
+            funcName: funcName,
+            args: args
+        });
+    }
+});
+// window.ymkAPI = apis;
+// window.NeteaseAPI = {
+//     // Proxy不能被克隆，直接定义一个通用的执行函数
+//     call: (funcName, ...args) => {
+//         return ipcRenderer.invoke('NeteaseAPIProxy', {
+//             funcName: funcName,
+//             args: args
+//         });
+//     }
+// };

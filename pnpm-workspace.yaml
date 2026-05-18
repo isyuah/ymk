@@ -1,5 +1,13 @@
 packages:
   - .
+  - packages/plugin-api
+
+allowBuilds:
+  core-js: true
+  electron: true
+  es5-ext: true
+  esbuild: true
+  vue-demi: true
 
 onlyBuiltDependencies:
   - core-js
@@ -7,3 +15,6 @@ onlyBuiltDependencies:
   - es5-ext
   - esbuild
   - vue-demi
+
+nodeLinker: hoisted
+blockExoticSubdeps: false

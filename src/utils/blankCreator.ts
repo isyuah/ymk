@@ -1,30 +1,19 @@
-import type { songInPlay } from "@/types";
-import type { song } from "@/types/song";
+import type {SongLyric} from "@/types";
+import type {CurrentSong} from "@/sources/song";
+import type {SongBase} from "@/sources/musicSource";
 
 export class Creator {
-  static SongInPlay(song?: song): songInPlay {
-    return song ? {
-      title: song.title || "",
-      type: song.type,
-      singer: song.singer || "",
-      pic: song.pic || '',
-      lrcs: {},
-      url: '',
-      origin: song,
-      lyricConfig: {
-        offset: song.lyricOffset || 0,
-      }
-    } : {
-      title: '',
-      type: '',
+  static currentSong(origin: SongBase): CurrentSong {
+    return {
+      url: "",
+      title: "",
       singer: '',
-      pic: '',
-      lrcs: {},
-      url: '',
-      origin: null as any,
+      pic: "",
+      lyrics: [] as unknown as Record<string, SongLyric>,
       lyricConfig: {
-        offset: 0,
-      }
-    }
+        offset: 0
+      },
+      origin,
+    } satisfies CurrentSong
   }
 }

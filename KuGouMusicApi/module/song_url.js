@@ -1,3 +1,5 @@
+const { randomString } = require('../util/util');
+
 // 获取音乐urls
 // quality 支持 魔法音乐
 // piano 钢琴
@@ -10,39 +12,41 @@ module.exports = (params, useAxios) => {
     ? `magic_${params?.quality}`
     : params.quality;
 
+  const isLite = process.env.platform === 'lite';
+  const page_id = isLite ? 967177915 : 151369488;
+  const ppage_id = isLite
+    ? (params.ppage_id || '356753938,823673182,967485191')
+    : '463467626,350369493,788954147';
+
   const dataMap = {
-    album_audio_id: Number(params.album_audio_id ?? 0),
+    album_id: Number(params.album_id ?? 0),
     area_code: 1,
-    hash: params?.hash || '',
-    vipType: params?.cookie?.vip_type || params?.vipType || 0, // 该参数不影响url获取
-    vipToken: params?.cookie?.vip_token || params?.vipToken || '', // 该参数不影响url获取
+    hash: (params?.hash || '').toLowerCase(),
+    ssa_flag: 'is_fromtrack',
+    version: 11430,
+    page_id,
+    quality: quality || 128,
+    album_audio_id: Number(params.album_audio_id ?? 0),
+
     behavior: 'play',
-    pid: 2,
+    pid: isLite ? 411 : 2,
     cmd: 26,
-    version: 9541,
     pidversion: 3001,
     IsFreePart: params?.free_part ? 1 : 0, //是否返回试听部分（仅部分歌曲）
-    album_id: Number(params.album_id ?? 0),
-    ssa_flag: 'is_fromtrack',
-    version: 11709,
-    page_id: 151369488,
-    quality: quality || 128,
-    pid: 2,
-    cmd: 26,
-    ppage_id: '463467626,350369493,788954147',
+    ppage_id,
     cdnBackup: 1,
-    kcard: 0,
-    module: 'collection',
+    module: '',
+    clientver: 11430,
   };
-
+  
   return useAxios({
     url: '/v5/url',
     method: 'GET',
     params: dataMap,
     encryptType: 'android',
-    headers: { 'x-router': 'tracker.kugou.com' },
+    headers: { 'x-router': 'trackercdn.kugou.com'},
     encryptKey: true,
     notSign: true,
-    cookie: params?.cookie || {},
+    cookie: Object.assign({}, {dfid: randomString(24)}, params?.cookie ),
   });
 };

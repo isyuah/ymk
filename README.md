@@ -118,3 +118,16 @@ pnpm install
 - 仓库里已经包含网易云与酷狗对应的本地 API 代码
 - QQ 相关能力在项目里有接入点，但接口地址需要在设置页单独配置
 - 仓库中已有 GitHub Actions 发布工作流：推送 `v*` tag 后会执行安装、构建、打包，并发布 `release/make/**`
+
+## 设计文档
+
+- `docs/music-source/00-overview.md`
+- `docs/music-source/01-current-architecture-audit.md`
+- `docs/music-source/02-target-models-and-types.md`
+- `docs/music-source/03-music-source-base-class.md`
+- `docs/music-source/04-registry-and-capabilities.md`
+- `docs/music-source/05-playlist-loading-redesign.md`
+- `docs/music-source/06-playback-and-lyric-resolution.md`
+- `docs/music-source/07-search-preview-and-actions.md`
+- `docs/music-source/08-migration-order-for-this-repo.md`
+- `docs/music-source/09-plugin-preparation.md`

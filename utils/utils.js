@@ -15,26 +15,14 @@ export async function startNcmServer() {
     if (!fs.existsSync(path.resolve(tmpPath, 'anonymous_token'))) {
         fs.writeFileSync(path.resolve(tmpPath, 'anonymous_token'), '', 'utf-8')
     }
-    const server = await import("../NeteaseCloudMusicApi/server.js");
-    const generateConfig = await import("../NeteaseCloudMusicApi/generateConfig.js");
+    const server = await import("NeteaseCloudMusicApi/server.js");
+    const generateConfig = await import("NeteaseCloudMusicApi/generateConfig.js");
     // 启动时更新anonymous_token
     await generateConfig.default();
     server.serveNcmApi({
         checkVersion: true,
         port: 35651
     })
-}
-export async function startKugouServer() {
-
-    const port = 35653;
-    const host = process.env.HOST || '';
-    const {consturctServer} = await import("../KuGouMusicApi/server.js")
-    const app = await consturctServer();
-    const appExt = app;
-    appExt.service = app.listen(port, host, () => {
-        console.log(`server running @ http://${host || 'localhost'}:${port}`);
-    });
-    return appExt;
 }
 export function checkResources() {
     if (!fs.existsSync('./res/config.json')) {

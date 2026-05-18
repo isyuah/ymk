@@ -1,11 +1,11 @@
 import {defineStore} from "pinia";
-import {ref} from "vue";
+import {ref, watch} from "vue";
 import type {apiConfig, config} from "@/types/config";
 import {usePlayerStore} from "@/stores/modules/player";
-import {useUserStore} from "@/stores/modules/user";
 const {writeConfig, writeSpecificConfig, getConfig, getSpecificConfig} = window.ymkAPI;
 
 export const useConfigStore = defineStore('config', () => {
+  const isReady = ref(false);
   const api = ref({
     neteaseApi: <apiConfig>{
       enable: false,
@@ -21,10 +21,7 @@ export const useConfigStore = defineStore('config', () => {
   const colors = ref<Record<string, string>>({});
   const defaultPlaylist = ref('isyuah_converted.json');
   const minimizeToTray = ref(false);
-  const isInitialized = ref(false);
-  const isInitializing = ref(false);
   const player = usePlayerStore()
-  const user = useUserStore()
   function saveConfig() {
     writeConfig(JSON.stringify({
       config: <config>{
@@ -37,38 +34,27 @@ export const useConfigStore = defineStore('config', () => {
         defaultPlaylist: defaultPlaylist.value,
         minimizeToTray: minimizeToTray.value,
       },
-      user: {
-        bilibiliUser: user.bilibiliUser,
-        kugouUser: user.kugouUser,
-        neteaseUser: user.neteaseUser,
-      }
     }))
   }
   function saveColors() {
     writeSpecificConfig('colors', JSON.stringify(colors.value))
   }
 
-  async function initConfig() {
-    if (isInitializing.value) {
+  const init = async () => {
+    if (isReady.value) {
+      console.warn("重复初始化 ConfigStore is ready");
       return;
     }
-    
-    isInitializing.value = true;
-    
+
     try {
       const [configData, colorsData] = await Promise.all([
         getConfig(),
         getSpecificConfig('colors')
       ]);
-      
+
       if (configData) {
         const jp = configData;
         console.log('$jsonConfig', jp);
-        
-        user.neteaseUser = jp.user.neteaseUser || {};
-        user.bilibiliUser = jp.user.bilibiliUser || {};
-        user.kugouUser = jp.user.kugouUser || {};
-        
         if (jp.config.api) {
           api.value = jp.config.api;
         }
@@ -94,17 +80,35 @@ export const useConfigStore = defineStore('config', () => {
           defaultPlaylist.value = jp.config.defaultPlaylist;
         }
       }
-      
+
       if (colorsData) {
         colors.value = colorsData;
       }
     } catch (error) {
       console.error('Failed to initialize config:', error);
     } finally {
-      isInitialized.value = true;
-      isInitializing.value = false;
+      isReady.value = true;
     }
   }
+
+  watch([
+    () => player.config.mode,
+    () => player.config.langPreferences,
+    () => player.config.volume,
+    api,
+    bg,
+    maskOpacity,
+    defaultPlaylist,
+    minimizeToTray,
+  ], () => {
+    if (!isReady.value) return;
+    saveConfig();
+  }, {deep: true, immediate: false})
+
+  watch(colors, () => {
+    if (!isReady.value) return;
+    saveColors();
+  }, {deep: true})
 
   return {
     api,
@@ -113,10 +117,9 @@ export const useConfigStore = defineStore('config', () => {
     maskOpacity,
     defaultPlaylist,
     minimizeToTray,
-    isInitialized,
-    isInitializing,
+    isReady,
     saveConfig,
     saveColors,
-    initConfig,
+    init,
   }
 })
