@@ -3,10 +3,10 @@ export default {
     appBundleId: "top.isyuah.dev",
     name: 'Yumuzk',
     icon: "./logo",
-    prune: false,
     ignore: (filePath) => {
       const normalized = String(filePath).replace(/\\/g, '/');
       if (normalized.includes('/node_modules/')) {
+        if (normalized.includes('/node_modules/@yumuzk/')) return true;
         return false;
       }
       const ignorePatterns = [

@@ -25,6 +25,8 @@
   "dependencies": {
     "NeteaseCloudMusicApi": "^4.31.0",
     "axios": "^1.15.0",
+    "big-integer": "^1.6.52",
+    "safe-decode-uri-component": "^1.2.1",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",

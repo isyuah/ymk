@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang='ts'>
-import {computed, nextTick, ref, toRaw, watch} from 'vue';
+import {computed, nextTick, ref, watch} from 'vue';
 import emitter from '@/emitter';
 import '@/assets/songlist.css'
 import Fuse from "fuse.js";
@@ -196,7 +196,7 @@ function tryShowMenu({song, si}: {song: SongBase, si: number}) {
 }
 
 function playAll() {
-  player.playlist = structuredClone(toRaw(runtimeData.currentPlaylist!.songs))
+  player.playlist = JSON.parse(JSON.stringify(runtimeData.currentPlaylist!.songs))
   if (!player.playlist.length) {
     return;
   }
