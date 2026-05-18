@@ -1,6 +1,7 @@
 packages:
   - .
   - packages/plugin-api
+  - KuGouMusicApi
 
 allowBuilds:
   core-js: true
