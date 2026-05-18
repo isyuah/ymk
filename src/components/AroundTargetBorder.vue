@@ -16,7 +16,7 @@
 <style scoped>
 .line {
     position: absolute;
-    background-color: var(--ymk-color);
+    background-color: var(--ymk-el-color);
     opacity: 0.9;
 }
 .topleft {

@@ -5,7 +5,7 @@
   </div>
     <div class="lyricPart" @wheel="lyricWheelEvent">
       <Transition name="uianim">
-        <div v-if="Object.keys(playerStore.song.lrcs).length" ref="lrcContentEl" class="lrcContent">
+        <div v-if="Object.keys(playerStore.currentSong?.lyrics ?? []).length" ref="lrcContentEl" class="lrcContent">
             <div ref="lrcContainerEl" class="lrcContainer allPointerEvents">
                 <div @click="turnSongToSpecificLyric(l)" v-for="(l, i) in LRC.items" class="lrcItem" :class="{blank: l.text.every(t => t === ''), active: i === playerStore.config.highlightLrcIndex}">
                   <div v-for="t in l.text">{{ t }}</div>
@@ -17,12 +17,12 @@
         </div>
       </Transition>
       <div class="fixedSongInfo">
-        <div class="title" @click="copy(playerStore.song.title, 'title')">
-          <div class="singleLineTextEl text">{{ playerStore.song.title }}</div>
+        <div class="title" @click="copy(playerStore.currentSong?.title ?? '', 'title')">
+          <div class="singleLineTextEl text">{{ playerStore.currentSong?.title ?? '' }}</div>
           <Transition appear name="fade"><img v-if="copySign.title" src="@/assets/checkmark.svg"/></Transition>
         </div>
-        <div class="singer" @click="copy(playerStore.song.singer, 'signer')">
-          <div class="singleLineTextEl text">{{ playerStore.song.singer }}</div>
+        <div class="singer" @click="copy(playerStore.currentSong?.singer ?? '', 'signer')">
+          <div class="singleLineTextEl text">{{ playerStore.currentSong?.singer ?? '' }}</div>
           <Transition appear name="fade"><img v-if="copySign.signer" src="@/assets/checkmark.svg"/></Transition>
         </div>
       </div>
@@ -65,7 +65,7 @@
                 <template #popper>
                   <div class="chooseLangPanel">
                     <VueDraggable :animation="150" v-model="player.config.langPreferences">
-                      <div :class="{disabled: !(item in playerStore.song.lrcs)}" class="langItem" @click="toggleLyricLang(item, !(item in playerStore.song.lrcs))" v-for="(item, i) in player.config.langPreferences">{{ langStringMapper[item] }}</div>
+                      <div :class="{disabled: !(item in (playerStore.currentSong?.lyrics ?? []))}" class="langItem" @click="toggleLyricLang(item, !(item in (playerStore.currentSong?.lyrics ?? [])))" v-for="(item, i) in player.config.langPreferences">{{ langStringMapper[item] }}</div>
                     </VueDraggable>
                   </div>
                 </template>
@@ -97,30 +97,29 @@ import emitter from '@/emitter';
 import Progress from '@/components/Progress.vue';
 import { computed, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from 'vue';
 import { minmax } from '@/utils/u';
-import type {song_lrc_item} from '@/types';
+import type {SongLyricItem} from '@/types';
 import {VueDraggable} from "vue-draggable-plus";
 import {langStringMapper} from "@/utils/stringMapper";
 import {usePlayerStore} from "@/stores/modules/player";
 import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
 import { showMessage } from '@/utils/message';
-import { isSongInPlaylist } from '@/utils/checkSongExist';
-import { addSongToPlaylist, removeSongFromPlaylist } from '@/utils/Toolkit';
+import {sourceRegistry} from "@/sources/registry";
 const {isMinimized, onRestore, sendLyric} = window.ymkAPI;
 const runtimeData = useRuntimeDataStore()
 const player = usePlayerStore()
 const playerStore = usePlayerStore();
 const isLiked = computed(() => {
-  const [result] = isSongInPlaylist(playerStore.song.origin, runtimeData.defaultPlaylist)
-  return result
+  // TODO: implement like/dislike via source capability
+  return false
 })
 let lrcContentEl = useTemplateRef('lrcContentEl')
 let lrcContainerEl = useTemplateRef('lrcContainerEl')
 let lyricAutoScrollLock = false;
 let lyricAutoScrollLockTimer: any = -2;
 const volumeProgressRef = useTemplateRef('volumeProgressRef')
-const LRC = computed(() => playerStore.song.lrcs[playerStore.config.lang] || {enableAutoScroll: false, items: []})
-function turnSongToSpecificLyric(lrcItem: song_lrc_item) {
-  emitter.emit('changeCurTimeTo', lrcItem.time + playerStore.song.lyricConfig.offset)
+const LRC = computed(() => playerStore.currentSong?.lyrics?.[playerStore.config.lang] || {enableAutoScroll: false, items: []})
+function turnSongToSpecificLyric(lrcItem: SongLyricItem) {
+  emitter.emit('changeCurTimeTo', lrcItem.time + (playerStore.currentSong?.lyricConfig?.offset ?? 0))
 }
 
 function resetLyricAutoScrollTimer(lock = true, time = 2500) {
@@ -153,7 +152,7 @@ function updateHighlightedIndex(ignoreLock = false) {
     }));
     return
   }
-  let offset = playerStore.song.lyricConfig.offset;
+  let offset = playerStore.currentSong?.lyricConfig.offset ?? 0;
   for (let i = 0; i < LRC.value.items.length; i++) {
     if (playerStore.config.curTimeNum + offset < LRC.value.items[i].time) {
       const targetLrcItemIndex = i - 1 >= 0 ? i - 1 : 0;
@@ -214,7 +213,7 @@ function lyricWheelEvent(e: WheelEvent) {
   lrcContainerEl.value.style.transform = `translateY(${minmax(transformVal - e.deltaY, minV, maxV)}px)`
 }
 freshLrcElement();
-watch([() => playerStore.config.lang, () => playerStore.song.lrcs, () => runtimeData.showFullPlay], () => {
+watch([() => playerStore.config.lang, () => playerStore.currentSong?.lyrics ?? [], () => runtimeData.showFullPlay], () => {
   playerStore.config.highlightLrcIndex = -1
   updateHighlightedIndex(true);
 }, {deep: true})
@@ -236,11 +235,8 @@ function copy(content: string, sign: keyof typeof copySign) {
   setTimeout(() => copySign[sign] = false, 2000)
 }
 function toggleLikeDislike() {
-  if (isLiked.value) {
-    removeSongFromPlaylist(playerStore.song.origin, runtimeData.defaultPlaylist, true)
-  }else {
-    addSongToPlaylist(playerStore.song.origin, runtimeData.defaultPlaylist, true)
-  }
+  // TODO: implement via source capability (appendToPlaylist / removeFromPlaylist)
+  showMessage('开发中')
 }
 </script>
 
@@ -351,7 +347,7 @@ function toggleLikeDislike() {
 .partContainer .controllPart .controlButtons .playbutton {
     width: 24px;
     height: 24px;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     margin: 0 20px;
     filter: drop-shadow(0 0 5px currentColor);
 }
@@ -417,7 +413,7 @@ function toggleLikeDislike() {
 }
 .partContainer .playmodeController .modeitem {
     cursor: pointer;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     width: 24px;
     height: 24px;
     filter: drop-shadow(0 0 5px #fff);

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import {computed, watch, ref, useTemplateRef, onUnmounted, nextTick} from "vue";
 const {
   items,
@@ -7,33 +7,33 @@ const {
   size = 10,
   eventName = "virtualList-refresh"
 } = defineProps<{
-  items: Array<any>,
+  items: T[],
   itemHeight: number,
   className?: string,
   size?: number,
   eventName ?: string,
 }>()
+defineSlots<{
+  default(props: {item: T, index: number}): any
+}>()
 const scrollTop = ref(0);
-
+const bufferSize = 2;
 const displayingItems = computed(() => {
   return items.slice(startIndex.value, endIndex.value)
 })
 const startIndex = computed(() => {
-  return Math.floor(scrollTop.value / itemHeight)
+  return Math.max(0, Math.floor(scrollTop.value / itemHeight) - bufferSize)
 })
 const endIndex = computed(() => {
-  return startIndex.value + size + 1;
+  return Math.min(items.length, startIndex.value + size + 1 + bufferSize * 2);
 });
-const transform = computed(() => {
-  return scrollTop.value % itemHeight
+const offsetTop = computed(() => {
+  return startIndex.value * itemHeight;
 })
 const containerEl = useTemplateRef<HTMLDivElement>('container')
-// console.log(displayingItems.value)
 function handleScroll() {
   if (!containerEl.value) return;
-  scrollTop.value = 0;
-  nextTick(() => scrollTop.value = containerEl.value!.scrollTop)
-  // console.log(scrollTop.value)
+  scrollTop.value = containerEl.value.scrollTop;
 }
 function refresh() {
   handleScroll()
@@ -43,7 +43,7 @@ watch(() => items, refresh)
 
 <template>
   <div ref="container" :class="className" class="list-container" @scroll.passive="handleScroll">
-    <div class="list" :style="{transform: `translateY(${-transform + scrollTop}px)`}">
+    <div class="list" :style="{transform: `translateY(${offsetTop}px)`}">
       <div class="list-item"
            v-for="(item, index) in displayingItems"
            :key="startIndex + index"
@@ -61,12 +61,20 @@ watch(() => items, refresh)
   height: 100%;
   width: 100%;
   overflow-y: auto;
+  will-change: scroll-position;
 }
 .list {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  bottom: 0;
+  z-index: 1;
+}
+.wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: -1;
 }
 </style>

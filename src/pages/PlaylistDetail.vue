@@ -1,28 +1,24 @@
 <template>
 <div class="transitionContainer">
-    <div @click="router.push('/playlist')" class="returnBtn">
+    <div @click="goBack" class="returnBtn">
         <svg t="1711457272465" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4244" width="48" height="48"><path d="M963.2 0L1024 67.2 512 614.4 0 67.2 60.8 0 512 480 963.2 0z" fill="currentColor" p-id="4245"></path></svg>
     </div>
     <div class="partContainer DEF-SONGLIST">
         <div class="listInfo">
-            <div class="faceImg forbidSelect">
-                <img :src="runtimeData.playlist.raw.pic" alt="">
+            <div class="faceImg forbidSelect" :class="{ circular: displayMode === 'artist' }">
+                <img referrerpolicy="no-referrer" :src="runtimeData.currentPlaylist!.document.pic" alt="">
             </div>
             <div class="info forbidSelect">
                 <div class="top">
-                  <div class="title">{{ runtimeData.playlist.raw.title }}</div>
-                  <button @click="subscribeToggle" class="subscribeBtn" v-if="runtimeData.playlist.extraInfo.type === 'pureNeteasePlaylist' && runtimeData.playlist.extraInfo.infos.subscribe > 0">{{runtimeData.playlist.extraInfo.infos.subscribe === 1 ? '取消收藏' : '收藏'}}</button>
-<!--                  <button @click="console.log(runtimeData.playlist)">{{runtimeData.playlist.extraInfo}}</button>-->
+                  <div class="title">{{ runtimeData.currentPlaylist!.document.title }}</div>
+                  <button @click="toggleSubscription(runtimeData.currentPlaylist)" class="subscribeBtn" v-if="runtimeData.currentPlaylist?.entryMetadata?.[0]?.canSubscribe">{{runtimeData.currentPlaylist.entryMetadata?.[0]?.subscribed ? '取消收藏' : '收藏'}}</button>
                 </div>
                 <div class="bottom">
-                    <div class="total">TOTAL {{ runtimeData.playlist.songs.length }}</div>
-                    <div class="intro">{{ runtimeData.playlist.raw.intro || 'AN ALBUM CREATED'}}</div>
+                    <div class="total">总共 {{ runtimeData.currentPlaylist?.songs.length ?? 0 }} 首</div>
+                    <div class="intro">{{ runtimeData.currentPlaylist?.document.intro ?? 'No Intro Here'}}</div>
                     <button @click="playAll" class="PlayAll">
-                        <div class="svgIcon">
-                            <svg t="1711448701001" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3437"><path d="M73.142857 0 910.957714 512 73.142857 1024Z" fill="currentColor" p-id="3438"></path></svg>
-                        </div>
+                        <span class="chevron"></span>
                         <div class="text">播放全部</div>
-                        <div class="fill"></div>
                     </button>
                 </div>
             </div>
@@ -35,26 +31,14 @@
           </div>
           <div class="songs">
             <div class="container">
-<!--              <simplebar data-auto-hide class="simplebar">-->
-<!--                <div class="songTable forbidSelect">-->
-<!--                  <div-->
-<!--                      @dblclick="playSong_withCheck(ITEM.item)"-->
-<!--                      class="song"-->
-<!--                      :class="{disabled: ITEM.item.type==='netease' && 'playable' in ITEM.item ? !ITEM.item.playable : false}"-->
-<!--                      @contextmenu.prevent="tryShowMenu({song: ITEM.item,si: ITEM.refIndex})"-->
-<!--                      v-for="ITEM in showingSonglist">-->
-<!--                    <div class="songInfo title">{{ ITEM.item.title }}<sub>{{ ITEM.item.type }}</sub></div>-->
-<!--                    <div class="songInfo author">{{ ITEM.item.singer }}</div>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </simplebar>-->
-              <VirtualList :item-height="38" :items="showingSonglist" :size="8" v-slot="{item: ITEM}" class-name="songTable">
+              <VirtualList :item-height="38" :items="showingSongList" :size="8" v-slot="{item: ITEM}" class-name="songTable">
+<!--                    TODO:: 批量查询歌曲disable-->
                 <div
-                    @dblclick="playSong_withCheck(ITEM.item)"
+                    @dblclick="playSong(ITEM.item)"
                     class="song"
-                    :class="{disabled: (ITEM.item.type==='netease' && 'playable' in ITEM.item) ? !ITEM.item.playable : false}"
+                    :class="{disabled: false}"
                     @contextmenu.prevent="tryShowMenu({song: ITEM.item,si: ITEM.refIndex})">
-                  <div class="songInfo title">{{ ITEM.item.title }}<sub>{{ ITEM.item.type }}</sub></div>
+                  <div class="songInfo title">{{ ITEM.item.title }}<sub>{{ ITEM.item.sourceType }}</sub></div>
                   <div class="songInfo author">{{ ITEM.item.singer }}</div>
                 </div>
               </VirtualList>
@@ -66,15 +50,14 @@
 </template>
 
 <script setup lang='ts'>
-import type {list_data, list_trace_netease_playlist} from '@/types'
-import type {song} from '@/types/song'
 import {computed, nextTick, ref, toRaw, watch} from 'vue';
 import emitter from '@/emitter';
 import '@/assets/songlist.css'
 import Fuse from "fuse.js";
-import EditSongDialog from "@/components/Dialogs/EditSongDialog.vue";
+import EditSongInfoDialog from "@/components/Dialogs/EditSongInfoDialog.vue";
+import CustomLyricDialog from "@/components/Dialogs/CustomLyricDialog.vue";
+import AddToPlaylistDialog from "@/components/Dialogs/AddToPlaylistDialog.vue";
 import {useRouter} from "vue-router";
-import {neteaseAxios} from "@/utils/axiosInstances";
 import VirtualList from "@/components/VirtualList.vue";
 import {showContextMenu} from "@/utils/contextMenu";
 import {usePlayerStore} from "@/stores/modules/player";
@@ -83,14 +66,26 @@ import {showDialog} from "@/utils/dialog";
 import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
 import {refreshPlaylists} from "@/utils/Toolkit";
 import { pinyin } from 'pinyin-pro';
+import {sourceRegistry} from "@/sources/registry";
+import type {LoadedPlaylist} from "@/sources/playlist";
+import type {SongBase} from "@/sources/musicSource";
+import type {DisplayMode} from "@/utils/v2/playlist";
 const router = useRouter();
-const {writePlaylistFile} = window.ymkAPI;
 const runtimeData = useRuntimeDataStore()
 const player = usePlayerStore()
 let filter = ref('');
 
+const displayMode = computed<DisplayMode>(() => (runtimeData.currentPlaylist as any)?.extra?.displayMode ?? 'playlist');
+
+function goBack() {
+  if (displayMode.value === 'playlist') {
+    router.push('/playlist');
+  } else {
+    router.push('/search');
+  }
+}
 const songsWithPinyin = computed(() => {
-  return runtimeData.playlist.songs.map(song => {
+  return runtimeData.currentPlaylist!.songs.map(song => {
     const titlePinyinFull = pinyin(song.title || '', { toneType: 'none', type: 'array' }).join('');
     const singerPinyinFull = pinyin(song.singer || '', { toneType: 'none', type: 'array' }).join('');
     const titlePinyinInitial = pinyin(song.title || '', { toneType: 'none', type: 'array', pattern: 'initial' }).join('');
@@ -111,130 +106,109 @@ let FuseVal = ref(new Fuse(songsWithPinyin.value, {
   threshold: 0.3
 }))
 
-watch(() => runtimeData.playlist, (nv) => {
+watch(() => runtimeData.currentPlaylist, (nv) => {
   FuseVal.value = new Fuse(songsWithPinyin.value, {
     keys: ['title', 'singer', 'titlePinyin', 'singerPinyin', 'titlePinyinInitial', 'singerPinyinInitial'],
     threshold: 0.3
   })
 }, {deep: true})
-let showingSonglist = computed(() => {
+let showingSongList = computed(() => {
   nextTick(() => emitter.emit('virtualList-refresh'))
-  if (!filter.value) {
-    return runtimeData.playlist.songs.map((element, index) => ({item: element, refIndex: index}))
+  if (!filter.value) {1
+    return runtimeData.currentPlaylist!.songs.map((element, index) => ({item: element, refIndex: index}))
   } else {
     // 使用拼音搜索
     const searchResults = FuseVal.value.search(filter.value);
     // 将搜索结果映射回原始歌曲列表
     return searchResults.map(result => {
-      const originalIndex = runtimeData.playlist.songs.findIndex(song => 
+      const originalIndex = runtimeData.currentPlaylist!.songs.findIndex(song =>
         song.title === result.item.title && song.singer === result.item.singer
       );
       return {
-        item: runtimeData.playlist.songs[originalIndex],
+        item: runtimeData.currentPlaylist!.songs[originalIndex],
         refIndex: originalIndex
       };
     });
   }
 })
-function tryShowMenu(a: any) {
-  if (runtimeData.playlist.raw.playlist.length !== 1 || runtimeData.playlist.raw.playlist[0].type !== 'data') return
-  showContextMenu({
-    menuItems: [{
-      title: '编辑',
-      action: menu_edit,
-    }, {
-      title: '删除',
-      action: menu_deleteSong,
-    }],
-    args: a
+
+async function toggleSubscription(pl: LoadedPlaylist) {
+  if (!(pl.document.entries?.[0].kind === 'playlistRef') || !(pl.entryMetadata?.[0]) || !('subscribed' in pl.entryMetadata[0])) return;
+  const ab = sourceRegistry.getSourceAbility('netease', 'subscribePlaylist');
+  if (!ab?.available) return;
+  if (await ab.invoke(pl.document.entries[0].ref)) {
+    pl.entryMetadata[0].subscribed = !pl.entryMetadata[0].subscribed;
+    showMessage("收藏/取消收藏 成功")
+  }
+}
+
+function tryShowMenu({song, si}: {song: SongBase, si: number}) {
+  const pl = runtimeData.currentPlaylist!
+  const sourceType = pl.metadata.origin.sourceType
+  const source = sourceRegistry.sources.get(sourceType)
+
+  const hasRemove = source?.getAvailability('removeFromPlaylist')?.available
+  const hasEdit = source?.getAvailability('editSongInfo')?.available
+  const hasLyric = source?.getAvailability('customizeLyric')?.available
+
+  type SongContext = { song: SongBase, si: number }
+
+  showContextMenu<SongContext>({
+    items: [
+      {
+        title: '播放',
+        action: ({song}) => emitter.emit('playSongV2', song),
+      },
+      {
+        title: '添加到歌单',
+        action: ({song}) => {
+          showDialog(AddToPlaylistDialog, { song })
+        },
+      },
+      {
+        title: '从歌单移除',
+        show: hasRemove,
+        action: async ({song}) => {
+          const ability = source!.getAvailability('removeFromPlaylist')
+          if (!ability?.available) return;
+          await ability.invoke(song, pl)
+          pl.songs.splice(si, 1)
+          showMessage('已移除')
+        },
+      },
+      {
+        title: '编辑歌曲信息',
+        show: hasEdit,
+        action: ({song}) => {
+          showDialog(EditSongInfoDialog, { song, playlist: pl, sourceType })
+        },
+      },
+      {
+        title: '自定义歌词',
+        show: hasLyric,
+        action: ({song}) => {
+          showDialog(CustomLyricDialog, { song, playlist: pl, sourceType })
+        },
+      },
+    ],
+    args: { song, si },
   })
 }
-function subscribeToggle() {
-  let t = runtimeData.playlist.extraInfo.infos.subscribe === 1 ? 2 : 1
-  neteaseAxios.get(`/playlist/subscribe`, {
-    params: {
-      timestamp: new Date().getTime(),
-      t,
-      id: (runtimeData.playlist.raw.playlist[0] as list_trace_netease_playlist).id,
-    }
-  }).then(res => {
-    if (res.data.code == 200) {
-      runtimeData.playlist.extraInfo.infos.subscribe = t;
-      showMessage(`${t === 1 ? '' : '取消'}收藏成功`)
-    }
-  })
-}
+
 function playAll() {
-  player.playlist = structuredClone(toRaw(runtimeData.playlist.songs))
+  player.playlist = structuredClone(toRaw(runtimeData.currentPlaylist!.songs))
   if (!player.playlist.length) {
     return;
   }
   if (player.config.mode === 'rand') {
-    emitter.emit('playSong', {song: player.playlist[Math.floor(Math.random() * (player.playlist.length))]})
+    emitter.emit('playSongV2', player.playlist[Math.floor(Math.random() * (player.playlist.length))])
   }else {
-    emitter.emit('playSong',{song: player.playlist[0]})
+    emitter.emit('playSongV2',player.playlist[0])
   }
 }
 
-function menu_edit(arg: any) {
-  showDialog(EditSongDialog, {
-    song: structuredClone(toRaw(arg.song)),
-    si: arg.si
-  })
-}
-function menu_deleteSong(arg: any) {
-    if (arg.song && arg.si >= 0) {
-        let ser = arg.si + 1;
-        let componentIndex = -1;
-        let np = runtimeData.playlists[runtimeData.playlist.listIndex];
-        for (let cI = 0; cI < np.playlist.length; cI++) {
-            let  c = np.playlist[cI];
-            if (c.type === 'data') {
-                if (c.songs.length >= ser) {
-                    componentIndex = cI
-                    break;
-                }else {
-                    ser -= c.songs.length;
-                }
-            }
-        }
-        if (componentIndex >= 0) {
-            let originFn = np.originFilename;
-            (np.playlist[componentIndex] as list_data).songs.splice(ser - 1, 1);
-            runtimeData.playlist.songs.splice(arg.si, 1);
-            writePlaylistFile(originFn, JSON.stringify(toRaw(np))).then(() => {
-                showMessage('删除成功');
-            }).catch(() => {
-                showMessage(`写入文件${originFn}失败`);
-            })
-            
-        }
-    }
-}
-function playSong_withCheck(song: song) {
-    if (player.playlist.length) {
-        emitter.emit('playSong',{song})
-    }else {
-        player.playlist = structuredClone(toRaw(runtimeData.playlist.songs))
-        emitter.emit('playSong',{song})
-    }
-}
-function collectPlaylist() {
-  let id = runtimeData.playlist.raw.title;
-  // if (runtimeData.playlist.raw.playlist[0].type === 'trace_netease_playlist') {
-  //
-  // }
-  writePlaylistFile(`${id}.json`, JSON.stringify({
-    title: runtimeData.playlist.raw.title,
-    pic: runtimeData.playlist.raw.pic,
-    intro: runtimeData.playlist.raw.intro,
-    playlist: runtimeData.playlist.raw.playlist,
-  })).then(() => {
-    showMessage('收藏成功');
-    refreshPlaylists({notReset: true});
-  }).catch(() => {
-    showMessage(`写入文件${id}.json失败`);
-  });
+function playSong(song: SongBase) {
+    emitter.emit('playSongV2', song);
 }
 
 </script>
@@ -243,7 +217,7 @@ function collectPlaylist() {
 <style scoped>
 .returnBtn {
     width: 24px;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     height: 24px;
     position: absolute;
     top:15px;
@@ -276,6 +250,12 @@ function collectPlaylist() {
     width: 100%;
     height: 100%;
 }
+.listInfo .faceImg.circular {
+    border-radius: 50%;
+}
+.listInfo .faceImg.circular img {
+    border-radius: 50%;
+}
 .listInfo .info {
     flex: 1;
     display: flex;
@@ -284,8 +264,7 @@ function collectPlaylist() {
     padding: 10px 0;
 }
 .listInfo .info .title {
-    font-family: SourceSansCNM;
-    font-weight: bold;
+    font-family: "PingFang SC";
     font-size: 24px;
     margin-bottom: 20px;
     color: var(--ymk-text-color);
@@ -294,62 +273,47 @@ function collectPlaylist() {
 }
 .listInfo .info .total, .listInfo .info .intro {
     margin-top: 2px;
-    /* margin-left: 5px; */
     color: var(--ymk-text-color);
     font-size: 18px;
-    font-weight: bold;
-    font-family: NovecentoWide;
-}
-.listInfo .info .collectPlaylist {
-  cursor: pointer;
-  background-color: #18191C;
-  display: inline-block;
-  color: #fff;
-  padding: 0 15px;
-  height: 35px;
-  line-height: 35px;
+    font-family: "PingFang SC";
 }
 .listInfo .info .bottom .PlayAll {
-    position: relative;
-    display: flex;
-    outline: none;
-    border: none;
-    width: 100%;
-    background-color: transparent;
-    padding: 0;
-    margin-top: 10px;
-    font-family: SourceHanSansCNM;
-    font-weight: bold;
-    height: 32px;
-    text-align: left;
-    transition: all .15s;
-    color: var(--ymk-text-color);
-}
-.listInfo .info .bottom .PlayAll .text {
-    line-height: 32px;
-    font-size: 18px;
-    margin-left: 10px;
-}
-.listInfo .info .bottom .PlayAll .svgIcon, .listInfo .info .bottom .PlayAll .svgIcon svg {
-    height: 32px;
-    width: 32px
-}
-.listInfo .info .bottom .PlayAll .fill {
-    transition: all .3s ease-in-out;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: -1;
-    width: 0;
-    background-color: rgba(0,0,0,.3);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  margin-top: 10px;
+  padding: 5px 15px;
+  font-family: "PingFang SC";
+  height: 32px;
+  text-align: left;
+  transition: all .15s;
+  color: var(--ymk-text-color);
+  align-self: flex-start;
+  cursor: pointer;
 }
 .listInfo .info .bottom .PlayAll:hover {
-    color: #fff;
+  background-color: rgba(255, 255, 255, .25);
+  backdrop-filter: blur(4px) saturate(180%);
 }
-.listInfo .info .bottom .PlayAll:hover .fill {
-    width: calc(100% - 20px);
+.listInfo .info .bottom .PlayAll .text {
+  display: inline-block;
+  line-height: 32px;
+  font-size: 20px;
+  margin-left: 10px;
+}
+.listInfo .info .bottom .PlayAll .chevron {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.6;
+  transform-origin: calc(75%) calc(75%);
+  transform: translate(-25%, -25%) rotate(-45deg);
 }
 .tablePartContainer {
   display: flex;
@@ -407,10 +371,6 @@ function collectPlaylist() {
   background-color: rgba(0,0,0,.6);
   color: var(--ymk-text-color);
   border: 1px solid #18191C;
-}
-
-.container.scrollable {
-  overflow-y: auto
 }
 
 .listInfo .info .intro {

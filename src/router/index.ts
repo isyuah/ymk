@@ -21,18 +21,6 @@ const routes: Array<RouteRecordRaw> = [
     },{
       path: 'settings',
       component: () => import('@/pages/Settings.vue')
-    },{
-      path: 'recommendedPlaylists',
-      component: () => import('@/pages/RecommendedPlaylists.vue')
-    },{
-      path: 'loading',
-      component: () => import('@/pages/Loading.vue')
-    },{
-      path: 'albumPreview',
-      component: () => import('@/pages/AlbumPreview.vue')
-    },{
-      path: 'artistPreview',
-      component: () => import('@/pages/ArtistPreview.vue')
     }]
   }
 ];

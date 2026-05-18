@@ -1,4 +1,4 @@
-// phase list ,song
+// mode list ,song
 
 module.exports = (params, useAxios) => {
   const paramsMap = {

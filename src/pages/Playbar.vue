@@ -15,25 +15,25 @@
 <div ref="fullContainer" v-show="!runtimeData.showFullPlay" class="play forbidSelect">
   <Transition name="heightAnim">
     <div class="playlistSonglist DEF-SONGLIST" v-show="showPlaylistSonglist">
-      <div class="fourHeightContainer">
+      <div class="foreContainer">
         <div class="playlistSonglistTitle">播放列表</div>
         <div class="songs">
           <div class="container">
             <VirtualList :item-height="38" :items="playerStore.playlist" :size="10" v-slot="{item: song, index}" class-name="songTable">
               <div
-                  @dblclick="playSong({song, justtry: false})"
+                  @dblclick="playSongV2(song)"
                   :class="{song: true, active: playerStore.config.indexInPlaylist === index}"
                   :data-song="song"
                   @contextmenu.prevent="showContextMenu({
-                    menuItems: [
+                    items: [
                        {
                          title: '删除',
-                         action: deleteSongInPlaylistSonglist
+                         action: deleteSongInPlaylistSongList
                        }
                     ],
                     args: index
                   })">
-                <div class="songInfo title">{{ song.title }}<sub>{{ song.type }}</sub></div>
+                <div class="songInfo title">{{ song.title }}<sub>{{ song.sourceType }}</sub></div>
                 <div class="songInfo author">{{ song.singer }}</div>
               </div>
             </VirtualList>
@@ -42,8 +42,8 @@
       </div>
     </div>
   </Transition>
-    <div @click="runtimeData.showFullPlay = true" v-show="playerStore.config.show_songface" class="songface">
-        <img ref="songfaceImg" referrerpolicy="no-referrer" src="" alt="">
+    <div @click="runtimeData.showFullPlay = true" v-show="playerStore.currentSong?.pic" class="songface">
+        <img ref="songfaceImg" referrerpolicy="no-referrer" :src="playerStore.currentSong?.pic ?? ''" alt="">
     </div>
     <div ref="progress_tooltip" style="display: none" class="progress-tooltip">00:00</div>
     <div @click="changeProgress" @mousemove="changeProgressTip"  @mouseleave="closeProgressTip" class="progress">
@@ -51,19 +51,19 @@
         <div ref="progressFill" :style="{width: `${playerStore.config.progress}%`}" class="fill"></div>
     </div>
     <div ref="songInformation" class="songInformation">
-        <div @click="runtimeData.showFullPlay = true" class="title">{{ playerStore.song.title }}</div>
-        <div class="singer">{{ playerStore.song.singer }}</div>
+        <div @click="runtimeData.showFullPlay = true" class="title">{{ playerStore.currentSong?.title ?? '' }}</div>
+        <div class="singer">{{ playerStore.currentSong?.singer ?? '' }}</div>
     </div>
     <div class="controlButtons">
         <div class="playbutton play_last">
-            <svg @click="playPrevSong" t="1711336017191" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1537"><path d="M772.930954 40.644923L301.575877 512l471.355077 471.355077a23.809313 23.809313 0 0 1-33.671221 33.67122L251.069046 528.83561a23.809313 23.809313 0 0 1 0-33.67122L739.259733 6.973703a23.809313 23.809313 0 0 1 33.671221 33.67122z" p-id="1538" fill="currentColor" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <svg @click="playPrevSong" t="1711336017191" class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="1537"><path d="M772.930954 40.644923L301.575877 512l471.355077 471.355077a23.809313 23.809313 0 0 1-33.671221 33.67122L251.069046 528.83561a23.809313 23.809313 0 0 1 0-33.67122L739.259733 6.973703a23.809313 23.809313 0 0 1 33.671221 33.67122z" p-id="1538" fill="currentColor" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
         </div>
         <div class="playbutton play_pause">
             <svg t="1711335223450" @click="playerStore.config.status = 'pause'" class="icon playbutton_pause" v-show="playerStore.config.status === 'play'" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6684"><path d="M325.008696 0c-28.93913 0-51.2 22.26087-51.2 51.2l0 919.373913c0 28.93913 22.26087 51.2 51.2 51.2s51.2-22.26087 51.2-51.2L376.208696 53.426087C376.208696 24.486957 351.721739 0 325.008696 0zM698.991304 0c-28.93913 0-51.2 22.26087-51.2 51.2l0 919.373913c0 28.93913 22.26087 51.2 51.2 51.2s51.2-22.26087 51.2-51.2L750.191304 53.426087C752.417391 24.486957 727.930435 0 698.991304 0z" fill="currentColor" p-id="6685"></path></svg>
             <svg t="1711335286889" @click="playerStore.config.status = 'play'" class="icon playbutton_play" v-show="playerStore.config.status === 'pause'" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2003"><path d="M897.113042 467.478259 182.539132 8.904348C166.956523-2.226087 144.695654-2.226087 129.113045 6.678261c-15.582609 8.904348-26.713043 26.713043-26.713043 44.521739l0 919.373909c0 20.034783 11.130435 35.617391 26.713043 44.521739C138.017393 1021.773909 144.695654 1023.999996 153.600001 1023.999996c8.904348 0 20.034783-2.226087 28.93913-8.904348L897.113042 556.521737c15.582609-8.904348 24.486956-26.713043 24.486956-44.521739C921.599998 494.191302 912.695651 478.608694 897.113042 467.478259zM204.800001 877.078257 204.800001 146.921739 774.67826 511.999998 204.800001 877.078257z" fill="currentColor" p-id="2004"></path></svg>
         </div>
         <div class="playbutton play_next">
-            <svg @click="playNextSong" t="1711336037990" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1699"><path d="M251.069046 983.355077l471.355077-471.355077L251.069046 40.644923A23.809313 23.809313 0 0 1 284.740267 6.973703l488.190687 488.190687a23.809313 23.809313 0 0 1 0 33.67122L284.740267 1017.026297A23.809313 23.809313 0 0 1 251.069046 983.355077z" fill="currentColor" p-id="1700" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <svg @click="playNextSong" b="1711336037990" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1699"><path d="M251.069046 983.355077l471.355077-471.355077L251.069046 40.644923A23.809313 23.809313 0 0 1 284.740267 6.973703l488.190687 488.190687a23.809313 23.809313 0 0 1 0 33.67122L284.740267 1017.026297A23.809313 23.809313 0 0 1 251.069046 983.355077z" fill="currentColor" p-id="1700" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
         </div>
     </div>
     <div class="durationInfo">
@@ -108,25 +108,26 @@
 <script setup lang='ts'>
 import {onBeforeUnmount, onMounted, onUnmounted, ref, useTemplateRef, watch, watchEffect} from 'vue';
 import '@/assets/songlist.css'
-import {type playSongParams, type songInPlay} from '@/types';
 import {minmax, secondsToMmss} from '@/utils/u';
 import emitter from '@/emitter'
 import SonglistTooltip from "@/components/SonglistTooltip.vue";
 import {showMessage} from "@/utils/message";
+import VirtualList from "@/components/VirtualList.vue";
+import {showContextMenu} from "@/utils/contextMenu";
+import {usePlayerStore} from "@/stores/modules/player";
+import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
+import {useConfigStore} from "@/stores/modules/config";
+import {Creator} from '@/utils/blankCreator';
+import type {SongBase, SourceEntityRef} from "@/sources/musicSource";
+import {sourceRegistry} from "@/sources/registry";
+import {ToSourceEntityRef} from "@/sources/song";
+
 let songSource = ref<HTMLVideoElement>();
 let progressFill = ref<HTMLDivElement>();
 let progressChooseFill = ref<HTMLDivElement>();
 let progress_tooltip = ref<HTMLDivElement>();
 let volumeProgressFill = ref<HTMLDivElement>();
 const playerStore = usePlayerStore();
-import VirtualList from "@/components/VirtualList.vue";
-import {MusicHandlers} from "@/utils/MusicHandlers";
-import {showContextMenu} from "@/utils/contextMenu";
-import {usePlayerStore} from "@/stores/modules/player";
-import {checkMusicPlayable} from "@/utils/Toolkit";
-import {useRuntimeDataStore} from "@/stores/modules/runtimeData";
-import {useConfigStore} from "@/stores/modules/config";
-import { Creator } from '@/utils/blankCreator';
 const {onUrlScheme, playPauseStatusUpdate, onTrayControl_PlayPause, onTrayControl_PlaySong, toggleLyricWindow} = window.ymkAPI;
 const runtimeData = useRuntimeDataStore()
 const config = useConfigStore()
@@ -140,7 +141,7 @@ function videoOnError(e: Event) {
   showMessage(JSON.stringify(e));
   if (songSource.value) {
     keepCurrentTimeCausedByError.value = songSource.value.currentTime;
-    playSong({song: playerStore.song.origin})
+    playSongV2(playerStore.currentSong!.origin)
   }
 }
 function whenLoadData() {
@@ -178,21 +179,13 @@ function playEnded() {
     }else if (playerStore.config.mode === 'list') {
       let si = playerStore.config.indexInPlaylist;
       if (si === playerStore.playlist.length - 1) {
-        playSong({
-          song: playerStore.playlist[0],
-          noEffectWhenNotPlayable
-        })
+        playSongV2(playerStore.playlist[0], false, noEffectWhenNotPlayable);
       }else {
-        playSong({
-          song: playerStore.playlist[si + 1],
-          noEffectWhenNotPlayable
-        });
+        playSongV2(playerStore.playlist[si + 1], false, noEffectWhenNotPlayable);
       }
     }else if (playerStore.config.mode === 'rand') {
-      playSong({
-        song: playerStore.playlist[Math.floor(Math.random() * (playerStore.playlist.length))],
-        noEffectWhenNotPlayable
-      })
+      playSongV2(playerStore.playlist[Math.floor(Math.random() * (playerStore.playlist.length))], false, noEffectWhenNotPlayable
+      )
     }else if (playerStore.config.mode === 'loop') {
       songSource.value!.currentTime = 0;
       songSource.value!.play();
@@ -237,101 +230,63 @@ function changeVolume(e: any) {
 }
 watchEffect(() => {
   if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata!.title = playerStore.song.title;
-    navigator.mediaSession.metadata!.artist = playerStore.song.singer;
+    navigator.mediaSession.metadata!.title = playerStore.currentSong?.title ?? '';
+    navigator.mediaSession.metadata!.artist = playerStore.currentSong?.singer ?? '';
     navigator.mediaSession.metadata!.artwork = [{
-      src: playerStore.song.pic,
+      src: playerStore.currentSong?.pic ?? '',
     }]
   }
 })
-async function playSong({song, justtry = false, noEffectWhenNotPlayable = true}: playSongParams) {
-  let tmpSong: songInPlay = Creator.SongInPlay(song);
-  let {result, msg} = await checkMusicPlayable(song);
-  if (!result) {
-    showMessage(`歌曲无法播放, ${msg}`)
-    if (noEffectWhenNotPlayable) return;
-    if (playerStore.config.mode !== 'loop') playNextSong();
-    return;
+async function resolveToCurrentSong(song: SongBase) {
+  const ability = sourceRegistry.getSourceAbility(song.sourceType, 'resolvePlayback');
+  if (!ability?.available) {
+    console.warn(`歌曲来源 ${song.sourceType} 不支持播放能力`)
+    showMessage(`歌曲来源 ${song.sourceType} 不支持播放能力`)
+    throw new Error(`歌曲来源 ${song.sourceType} 不支持播放能力`)
   }
-  const tasks: Promise<void>[] = []
-  if (song.type === 'bilibili') {
-    MusicHandlers.MusicHandlerBilibili({
-      tasks,
-      tmpSong,
-      song
-    })
-  }
-  else if (song.type === 'web') {
-    tmpSong.url = song.symbol;
-  }
-  else if (song.type === 'local') {
-
-  }
-  else {
-    MusicHandlers.record[song.type]({
-      tasks,
-      tmpSong,
-      song,
-    })
-  }
-  Promise.all(tasks).then(() => {
-    Object.assign(playerStore.song, {
-      ...tmpSong
-    })
-    for (let langOption of playerStore.config.langPreferences) {
-      if (langOption in playerStore.song.lrcs) {
-        playerStore.config.lang = langOption;
-        break;
-      }
+  const songRef = ToSourceEntityRef(song);
+  const checkAbility = sourceRegistry.getSourceAbility(song.sourceType, 'checkSongPlayable');
+  if (checkAbility?.available) {
+    let result = await checkAbility.invoke(songRef);
+    if (!result.playable) {
+      showMessage(`歌曲无法播放： ${result.reason}`)
+      if (playerStore.config.mode !== 'loop') playNextSong();
+      throw new Error("歌曲无法播放")
     }
-    if (!justtry) {
-      let findIndex = -1;
-      for (let i = 0; i < playerStore.playlist.length; i++) {
-        let tmpSong = playerStore.playlist[i];
-        if (tmpSong.title === song.title &&
-            tmpSong.singer === song.singer &&
-            tmpSong.type === song.type) {
-          findIndex = i;
-          break;
-        }
-      }
-      playerStore.config.indexInPlaylist = findIndex;
-    }
-    if (tmpSong.pic) {
-      if (songfaceImg.value) {
-        songfaceImg.value.src = tmpSong.pic;
-        playerStore.config.show_songface = true;
-      }
-    }else {
-      playerStore.config.show_songface = false;
-    }
-    if (songSource.value) {
-      songSource.value.src = tmpSong.url;
-      const listener = () => {
-        if (songSource.value) {
-          playerStore.config.duration = songSource.value.duration;
-          playerStore.config.durationTime = secondsToMmss(songSource.value.duration)
-          playerStore.config.status = 'play';
-        }
-        songSource.value?.removeEventListener('loadedmetadata', listener)
-      }
-      songSource.value.addEventListener('loadedmetadata', listener)
-    }
-  }).catch((err) => {
-    console.log(err, song);
-    showMessage(err.message || err || '')
-  })
+  }
+  return await ability.invoke(songRef)
 }
-
+async function playSongV2(song: SongBase, justTry: boolean = false, noActionWhenNotPlayable = true) {
+  const currentSong = Creator.currentSong(song)
+  const r = await resolveToCurrentSong(song);
+  Object.assign(currentSong, {
+    url: r.url,
+    pic: song.pic || r.pic,
+    singer: song.singer || r.singer,
+    title: song.title || r.title,
+  })
+  const lyricRef: SourceEntityRef = song.lyricOverride ?? ToSourceEntityRef(song);
+  const lrcAbility = sourceRegistry.getSourceAbility(song.sourceType, 'resolveLyric');
+  if (!lrcAbility?.available) {
+    console.warn(`歌曲来源 ${song.sourceType} 不支持歌词能力`)
+    showMessage(`歌曲来源 ${song.sourceType} 不支持歌词能力`)
+  } else {
+    currentSong.lyrics = await lrcAbility.invoke(lyricRef)
+  }
+  for (let langOption of playerStore.config.langPreferences) {
+    if (langOption in currentSong.lyrics) {
+      playerStore.config.lang = langOption;
+      break;
+    }
+  }
+  playerStore.currentSong = currentSong;
+}
 
 onUrlScheme((event: any, uri: any) => {
   console.log('@urlScheme', event, uri)
   const song = JSON.parse(decodeURIComponent(uri))
   if ('type' in song) {
-    playSong({
-      justtry: true,
-      song,
-    })
+    playSongV2(song, true)
   }
 })
 
@@ -349,13 +304,13 @@ function changeCurTimeTo(to: number) {
         songSource.value.currentTime = to;
     }
 }
-function deleteSongInPlaylistSonglist(index: number) {
+function deleteSongInPlaylistSongList(index: number) {
   if (index < 0 || index >= playerStore.playlist.length) {
     return
   }
   playerStore.playlist.splice(index, 1);
   if (playerStore.config.indexInPlaylist === index) {
-    playSong({song: playerStore.playlist[minmax(index, 0, playerStore.playlist.length - 1)]});
+    playSongV2(playerStore.playlist[minmax(index, 0, playerStore.playlist.length - 1)]);
   }
 }
 function playPrevSong() {
@@ -363,36 +318,21 @@ function playPrevSong() {
     if (playerStore.config.mode === 'list' || playerStore.config.mode === '' || playerStore.config.mode === 'loop') {
       let si = playerStore.config.indexInPlaylist;
       if (si <= 0 || si > playerStore.playlist.length - 1) {
-        playSong({
-          song: playerStore.playlist[playerStore.playlist.length - 1],
-          noEffectWhenNotPlayable
-        })
+        playSongV2(playerStore.playlist[playerStore.playlist.length - 1], false, noEffectWhenNotPlayable)
       }else {
-        playSong({
-          song: playerStore.playlist[si - 1],
-          noEffectWhenNotPlayable
-        });
+        playSongV2(playerStore.playlist[si - 1], false, noEffectWhenNotPlayable);
       }
     }else if(playerStore.config.mode === 'rand') {
-      playSong({
-        song: playerStore.playlist[Math.floor(Math.random() * (playerStore.playlist.length))],
-        noEffectWhenNotPlayable
-      })
+      playSongV2(playerStore.playlist[Math.floor(Math.random() * (playerStore.playlist.length))], false, noEffectWhenNotPlayable)
     }
 }
 function playNextSong() {
   if (playerStore.config.mode === 'loop') {
     let si = playerStore.config.indexInPlaylist;
       if (si === playerStore.playlist.length - 1) {
-        playSong({
-          song: playerStore.playlist[0],
-          noEffectWhenNotPlayable: false
-        })
+        playSongV2(playerStore.playlist[0], false, false)
       }else {
-        playSong({
-          song: playerStore.playlist[si + 1],
-          noEffectWhenNotPlayable: false
-        });
+        playSongV2(playerStore.playlist[si + 1], false, false);
       }
   }else {
     playEnded();
@@ -403,13 +343,29 @@ onMounted(() => {
   watch(() => playerStore.config.volume, (nv) => {
     changeVolumeTo(minmax(playerStore.config.volume, 0, 1))
   }, {immediate: true})
+  watch(() => playerStore.currentSong?.url, (nv) => {
+    if (nv) {
+      if (songSource.value) {
+        songSource.value.src = nv;
+        const listener = () => {
+          if (songSource.value) {
+            playerStore.config.duration = songSource.value.duration;
+            playerStore.config.durationTime = secondsToMmss(songSource.value.duration)
+            playerStore.config.status = 'play';
+          }
+          songSource.value?.removeEventListener('loadedmetadata', listener)
+        }
+        songSource.value.addEventListener('loadedmetadata', listener)
+      }
+    }
+  })
   window.addEventListener('click', handleCloseCurrentPlaylistUI)
   onTrayControl_PlayPause((_e: any, status: boolean) => {
     if (!songSource.value) return;
     if (status) {
-      songSource.value.play();
+      playerStore.config.status = 'play';
     }else {
-      songSource.value.pause();
+      playerStore.config.status = 'pause';
     }
   })
   onTrayControl_PlaySong((_e: any, direction: string) => {
@@ -426,24 +382,35 @@ function keyDownEvent(e: KeyboardEvent) {
     return;
   }
 
-  if (!songSource.value || !playerStore.song.title) return;
+  if (!songSource.value || !playerStore.currentSong?.title) return;
   if (e.key === ' ') {
     e.preventDefault()
     if (songSource.value.paused) {
-      songSource.value.play()
+      playerStore.config.status = 'play'
     }else {
-      songSource.value.pause()
+      playerStore.config.status = 'pause'
     }
   }
 }
 onBeforeUnmount(() => {
+  onBeforeUnmount(() => {
+    if (songSource.value) {
+      songSource.value.pause();
+      songSource.value.src = "";
+      songSource.value.load();
+    }
+  });
   window.removeEventListener('keydown', keyDownEvent)
   window.removeEventListener('click', handleCloseCurrentPlaylistUI)
 })
 watch(() => playerStore.config.status, (nv) => {
     if (!songSource.value) return;
     if (nv === 'play') {
-        songSource.value.play();
+        try {
+          songSource.value.play();
+        } catch (e) {
+          console.warn("[Playbar] songSource .play() error: " + (e as Error)?.message || e)
+        }
     }else if (nv === 'pause') {
         songSource.value.pause();
     }
@@ -458,17 +425,17 @@ watch(() => playerStore.config.show_songface, (nv) => {
         songInformation.value.style.width = "358px";
     }
 }, {immediate: true})
-emitter.on('playSong', playSong)
+emitter.on('playSongV2', playSongV2)
 emitter.on('playPrevSong', playPrevSong)
 emitter.on('playNextSong', playNextSong)
 emitter.on('changeVolumeTo', changeVolumeTo)
 emitter.on('changeCurTimeTo', changeCurTimeTo)
 onUnmounted(() => {
-  emitter.off('playSong');
-  emitter.off('changeVolumeTo')
-  emitter.off('playPrevSong')
-  emitter.off('playNextSong')
-  emitter.off('changeCurTimeTo')
+  emitter.off('playSongV2', playSongV2);
+  emitter.off('changeVolumeTo', playPrevSong)
+  emitter.off('playPrevSong', playPrevSong)
+  emitter.off('playNextSong', playNextSong)
+  emitter.off('changeCurTimeTo', changeCurTimeTo)
 })
 </script>
 
@@ -477,6 +444,7 @@ onUnmounted(() => {
     display: none;
 }
 .play {
+  z-index: 5;
     height: 64px;
   background-color: rgba(0,0,0,.1);
 }
@@ -509,8 +477,7 @@ onUnmounted(() => {
     position: absolute;
     height: 4px;
     top: 0;
-    width: 0%;
-    /* background-color: #ec452c; */
+    width: 0;
     background-color: var(--ymk-progress-fill-color);
     transition: alls .1s;
 }
@@ -570,7 +537,7 @@ onUnmounted(() => {
     cursor: pointer;
     width: 24px;
     height: 24px;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     margin: 0 20px;
 }
 .play .durationInfo {
@@ -585,7 +552,7 @@ onUnmounted(() => {
 .play .durationInfo .infoItem {
     font-family: Bender;
     font-weight: bold;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     font-size: 14px;
     letter-spacing: 1px;
     margin: 2px 10px;
@@ -602,7 +569,7 @@ onUnmounted(() => {
 }
 .play .volumeController .volumeProgress {
     position: relative;
-    border: 1.5px solid var(--ymk-color);
+    border: 1.5px solid var(--ymk-el-color);
     width: 150px;
     height: 14px;
 }
@@ -611,7 +578,7 @@ onUnmounted(() => {
     top: 0;
     bottom: 0;
     width: 100%;
-    background-color: var(--ymk-color);
+    background-color: var(--ymk-el-color);
     transition: all .1s;
 }
 .play .playmodeController {
@@ -620,14 +587,14 @@ onUnmounted(() => {
 }
 .play .playmodeController .modeitem {
     cursor: pointer;
-    color: var(--ymk-color);
+    color: var(--ymk-el-color);
     width: 24px;
     height: 24px;
 }
 .play .lyricButton {
   width: 24px;
   height: 24px;
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
   margin-left: 10px;
 }
 .play .fullPlayBtn, .play .lyricButton {
@@ -636,20 +603,20 @@ onUnmounted(() => {
   /* margin-left: 20px; */
   width: 24px;
   height: 24px;
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
 }
 .play .fullPlayBtn svg {
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
 }
 .play .playlistSonglist {
-  box-shadow: 0 0 10px rgba(0,0,0,.4);
+  box-shadow: 0 0 10px rgba(255, 255, 255, .2);
   left: 0;
   right: 0;
-  background-color: rgba(0,0,0,.4);
+  background-color: rgba(255, 255, 255,.1);
   position: absolute;
   bottom: 64px;
 }
-.play .playlistSonglist .fourHeightContainer {
+.play .playlistSonglist .foreContainer {
   backdrop-filter: blur(10px);
   box-shadow: 0 0 5px #000;
   height: 400px;
@@ -657,7 +624,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0;
 }
-.fourHeightContainer .playlistSonglistTitle {
+.foreContainer .playlistSonglistTitle {
   margin-top: 10px;
   margin-left: 10px;
   padding-bottom: 10px;
@@ -666,10 +633,8 @@ onUnmounted(() => {
   border-bottom: 1px solid rgba(255,255,255,0.2);
   color: var(--ymk-text-color);
 }
-.songTable .song {
-  grid-template-columns: 12fr 10fr;
-}
-.fourHeightContainer .songTable .song:hover, .songTable .song.active {
+
+.foreContainer .songTable .song:hover, .songTable .song.active {
   background-color: rgba(255,255,255,.3);
 }
 </style>

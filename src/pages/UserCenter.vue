@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import NeteaseUser from "@/components/Login/NeteaseUser.vue";
-import KugouUser from "@/components/Login/KugouUser.vue";
-import BilibiliUser from "@/components/Login/BilibiliUser.vue";
+import SourceAuthCard from "@/components/Login/SourceAuthCard.vue";
+import { sourceRegistry } from "@/sources/registry";
 
-
+const authSources = sourceRegistry.filter(s => !!s.auth);
 </script>
 
 <template>
 <div class="UserCenterContainer">
-  <NeteaseUser />
-  <KugouUser />
-  <BilibiliUser />
+  <SourceAuthCard v-for="source in authSources" :key="source.id" :source="source" />
 </div>
 </template>
 
@@ -25,11 +22,12 @@ import BilibiliUser from "@/components/Login/BilibiliUser.vue";
 :deep(.userContainer) {
   & {
     padding: 20px;
-    background-color: rgba(255, 255, 255, .7);
-    backdrop-filter: blur(4px);
+    background-color: rgba(255, 255, 255, .3);
+    backdrop-filter: blur(8px) saturate(180%);
     margin: 20px;
     border-radius: 16px;
-    box-shadow: 0 0 5px rgba(255, 255, 255, 1);
+    border: 1px solid rgba(255, 255, 255, .4);
+    box-shadow: 0 0 8px rgba(255, 255, 255, .35);
   }
   & .title {
     color: #000;
@@ -41,6 +39,7 @@ import BilibiliUser from "@/components/Login/BilibiliUser.vue";
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
   }
   & .loginBtn {
     color: #000;
@@ -50,9 +49,8 @@ import BilibiliUser from "@/components/Login/BilibiliUser.vue";
     outline: 0;
     background-color: transparent;
     border: 0;
-    font-weight: bold;
+    /* font-weight: bold; */
     height: 45px;
-    width: 90px;
     font-size: 20px;
     cursor: pointer;
     position: relative;

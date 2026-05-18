@@ -1,10 +1,9 @@
 import {defineStore} from "pinia";
-import type {songInPlay} from "@/types";
-import type {song} from '@/types/song'
 import {ref, shallowRef} from "vue";
 import { Creator } from "@/utils/blankCreator";
+import type {CurrentSong} from "@/sources/song";
+import type {SongBase} from "@/sources/musicSource";
 export const usePlayerStore = defineStore('player', () => {
-  const song = ref(Creator.SongInPlay())
   const config = ref({
     curTime: '',
     lang: 'origin',
@@ -21,10 +20,11 @@ export const usePlayerStore = defineStore('player', () => {
     indexInPlaylist: -1,
     langPreferences: ["mixed", "origin", "translation"]
   })
-  const playlist = shallowRef(<song[]>[])
+  const playlist = shallowRef(<SongBase[]>[])
+  const currentSong = ref<CurrentSong | null>(null);
   return {
-    song,
     config,
-    playlist
+    playlist,
+    currentSong
   }
 })

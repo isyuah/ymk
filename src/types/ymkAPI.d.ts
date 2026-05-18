@@ -1,6 +1,15 @@
+import type * as NeteaseAPI from 'NeteaseCloudMusicApi';
 declare global {
   interface Window {
     ymkAPI: ymkInterface;
+    NeteaseAPI: {
+      call: (funcName: string, ...args: any[]) => Promise<any>;
+    };
+    NeteaseAPIProxy: {
+      [K in keyof typeof NeteaseAPI]: typeof NeteaseAPI[K] extends (...args: infer P) => any
+          ? (...args: P) => Promise<any>
+          : never;
+    };
   }
 }
 
@@ -12,7 +21,9 @@ export interface ymkInterface {
   showAskDialog: (options: any) => Promise<any>;
   showChoosePlaylistDialog: (options: any) => Promise<any>;
   deletePlaylistFile: (fn: string) => Promise<any>;
-  writePlaylistFile: (fn: string, t: string) => Promise<any>;
+  renamePlaylistFile: (fn: string, newName: string) => Promise<any>;
+  appendToPlaylistFile: (fn: string, song: any) => Promise<any>;
+  writePlaylistFile: (fn: string, t: Record<string, any>) => Promise<any>;
   readClipboard: () => Promise<any>;
   writeConfig: (t: string) => Promise<any>;
   minimize: () => void;
@@ -36,4 +47,7 @@ export interface ymkInterface {
   closeLyricWindow: () => Promise<any>;
   toggleLyricWindow: () => Promise<any>;
   sendLyric: (lyric: any) => Promise<any>;
+  readSourceStorage: () => Promise<any>;
+  saveSourceStorage: (data: any) => void;
+  loadPlugins: () => Promise<{ name: string; url: string }[]>;
 }

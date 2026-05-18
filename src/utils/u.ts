@@ -1,4 +1,4 @@
-import {type song_lrc_item} from "@/types";
+import {type SongLyricItem} from "@/types";
 import {Base64} from "js-base64";
 
 export function secondsToMmss(seconds: number) {
@@ -33,7 +33,7 @@ export function getFormattedDateWithPadding() {
 }
 
 export function proceedLrcText(lrcText: string) {
-    let result: song_lrc_item[] = [];
+    let result: SongLyricItem[] = [];
     const checkRegex = /\[(\d{2}):(\d{2})\.(\d{1,4})]/g
     const checkResult = lrcText.match(checkRegex);
     if ((!checkResult || checkResult.length === 0) && lrcText.length !== 0) {
@@ -65,8 +65,8 @@ export function proceedLrcText(lrcText: string) {
 
 export function proceedKrcText(krcText: string) {
 
-    let originResult: song_lrc_item[] = [];
-    let translationResult: song_lrc_item[] = [];
+    let originResult: SongLyricItem[] = [];
+    let translationResult: SongLyricItem[] = [];
     let lines = []
     if (krcText.indexOf('\r') !== -1) {
         lines = krcText.split('\r\n');

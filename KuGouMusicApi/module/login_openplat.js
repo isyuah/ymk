@@ -1,18 +1,13 @@
 // 开放平台登录
 const axios = require('axios');
-const {
-  wx_appid,
-  wx_secret,
-  cryptoAesDecrypt,
-  cryptoAesEncrypt,
-  cryptoRSAEncrypt,
-  wx_lite_appid,
-  wx_lite_secret,
-  isLite,
-} = require('../util');
+const { wx_appid, wx_secret, cryptoAesDecrypt, cryptoAesEncrypt, cryptoRSAEncrypt, wx_lite_appid, wx_lite_secret, isLite } = require('../util');
 const appid = isLite ? wx_lite_appid : wx_appid;
 const secret = isLite ? wx_lite_secret : wx_secret;
 
+let liteT2Key = 'fd14b35e3f81af3817a20ae7adae7020';
+let liteT2Iv = '17a20ae7adae7020';
+let liteT1Key = '5e4ef500e9597fe004bd09a46d8add98';
+let liteT1Iv = '04bd09a46d8add98';
 
 const assetsToken = (code) => {
   return axios({
@@ -32,13 +27,19 @@ module.exports = (params, useAxios) => {
         const dateNow = Date.now();
         const encrypt = cryptoAesEncrypt({ access_token: assetsTokenResp.data.access_token });
         const pk = cryptoRSAEncrypt({ 'clienttime_ms': dateNow, key: encrypt.key }).toUpperCase();
+        const t2 = cryptoAesEncrypt(
+          `${params.cookie?.KUGOU_API_GUID}|0f607264fc6318a92b9e13c65db7cd3c|${params.cookie?.KUGOU_API_MAC}|${params.cookie?.KUGOU_API_DEV}|${dateNow}`,
+          { key: liteT2Key, iv: liteT2Iv }
+        );
+        const t1 = cryptoAesEncrypt(`|${dateNow}`, { key: liteT1Key, iv: liteT1Iv });
 
         const dataMap = {
+          dev: params.cookie?.KUGOU_API_DEV,
           force_login: 1,
           partnerid: 36,
           clienttime_ms: dateNow,
-          t1: 0,
-          t2: 0,
+          t1: isLite ? t1 : 0,
+          t2: isLite ? t2 : 0,
           t3: 'MCwwLDAsMCwwLDAsMCwwLDA=',
           openid: assetsTokenResp.data.openid,
           params: encrypt.str,
@@ -63,6 +64,7 @@ module.exports = (params, useAxios) => {
             response.body.data['token'] = getToken;
             response.cookie.push(`token=${getToken}`);
           }
+          response.cookie.push(`t1=${response.body.data?.t1 ?? ''}`);
           response.cookie.push(`userid=${response.body.data?.userid || 0}`);
           response.cookie.push(`vip_type=${response.body.data?.vip_type || 0}`);
           response.cookie.push(`vip_token=${response.body.data?.vip_token || ''}`);

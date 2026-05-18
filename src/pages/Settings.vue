@@ -141,7 +141,7 @@ function saveOtherConfig () {
 .SettingsPane > .content {
   padding-top: 10px;
   padding-left: 20px;
-  color: var(--ymk-color);
+  color: var(--ymk-el-color);
 }
 .Input {
   margin: 10px 0;

@@ -1,4 +1,6 @@
 const pako = require('pako');
+const CryptoJS = require('crypto-js');
+const bigInt = require('big-integer');
 
 /**
  * 随机字符串
@@ -7,6 +9,19 @@ const pako = require('pako');
  */
 const randomString = (len = 16) => {
   const keyString = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const _key = [];
+  const keyStringArr = keyString.split('');
+  for (let i = 0; i < len; i += 1) {
+    const ceil = Math.ceil((keyStringArr.length - 1) * Math.random());
+    const _tmp = keyStringArr[ceil];
+    _key.push(_tmp);
+  }
+
+  return _key.join('');
+};
+
+const randomNumber = (len = 16) => {
+  const keyString = '1234567890';
   const _key = [];
   const keyStringArr = keyString.split('');
   for (let i = 0; i < len; i += 1) {
@@ -69,9 +84,33 @@ const decodeLyrics = (val) => {
   }
 };
 
+const calculateMid = (str) => {
+  let bigInteger = bigInt(0);
+  const bigInteger2 = bigInt(16);
+  const digest = CryptoJS.MD5(str).toString(CryptoJS.enc.Hex);
+  const length = digest.length;
+  for (let i = 0; i < length; i += 1) {
+    const charValue = bigInt(parseInt(digest.charAt(i), 16));
+    const powerValue = bigInteger2.pow(length - 1 - i);
+    bigInteger = bigInteger.add(charValue.multiply(powerValue));
+  }
+  return bigInteger.toString();
+};
+
+const getGuid = () => {
+  const e = () => {
+    return ((65536 * (1 + Math.random())) | 0).toString(16).substring(1);
+  };
+
+  return `${e()}${e()}-${e()}-${e()}-${e()}-${e()}${e()}${e()}`;
+};
+
 module.exports = {
   decodeLyrics,
   cookieToJson,
   parseCookieString,
   randomString,
+  randomNumber,
+  calculateMid,
+  getGuid
 };

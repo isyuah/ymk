@@ -1,11 +1,14 @@
-import {app, BrowserWindow, dialog, ipcMain, screen} from 'electron'
+import {app, BrowserWindow, dialog, ipcMain, net, protocol, screen} from 'electron'
 import path from 'path';
-import {fileURLToPath} from 'url';
-import {checkFolders, checkResources, startKugouServer, startNcmServer} from "./utils/utils.js";
+import {fileURLToPath, pathToFileURL} from 'url';
+import {checkFolders, checkResources, startNcmServer} from "./utils/utils.js";
+import {startService} from './KuGouMusicApi/server.js'
 import express from "express";
 import process from 'process';
 import axios from "axios";
 import {initTray} from "./utils/tray.js";
+import * as NeteaseAPIModules from 'NeteaseCloudMusicApi';
+const NeteaseAPI = NeteaseAPIModules.default;
 import {
     deletePlaylistFile,
     getConfig,
@@ -16,7 +19,11 @@ import {
     showChoosePlaylistDialog,
     writeConfig,
     writePlaylistFile,
-    writeSpecificConfig
+    writeSpecificConfig,
+    readSourceStorage,
+    saveSourceStorage,
+    renamePlaylistFile,
+    appendToPlaylistFile
 } from "./functions.js";
 import fs from "node:fs";
 
@@ -46,12 +53,10 @@ if (!gotTheLock) {
             app.setAsDefaultProtocolClient('yumuzk')
         }
     }
-    // 三个服务：
-    // 35651: 网易云API
+    // 两个服务：
     // 35652: 代理
     // 35653: 酷狗
-    startNcmServer()
-    startKugouServer()
+    startService()
     const proxyServer = express()
     proxyServer.use(express.json())
     proxyServer.post('/', async (req, res) => {
@@ -86,6 +91,15 @@ if (!gotTheLock) {
     checkFolders(['./res', './res/lists'])
     checkResources()
 
+    // 自定义协议，给local源
+    app.whenReady().then(() => {
+        protocol.handle('local-music://', (req) => {
+            const fp = decodeURIComponent(req.url.replace('local-music://', ''));
+            return net.fetch(pathToFileURL(fp).href)
+        })
+    })
+
+
     const createWindow = () => {
         mainWindow = new BrowserWindow({
             menuBarVisible: false,
@@ -102,6 +116,8 @@ if (!gotTheLock) {
         ipcMain.handle('showAskDialog', showAskDialog)
         ipcMain.handle('showChoosePlaylistDialog', showChoosePlaylistDialog)
         ipcMain.handle('deletePlaylistFile', deletePlaylistFile)
+        ipcMain.handle('renamePlaylistFile', renamePlaylistFile)
+        ipcMain.handle('appendToPlaylistFile', appendToPlaylistFile)
         ipcMain.handle('writePlaylistFile', writePlaylistFile)
         ipcMain.handle('getConfig', getConfig)
         ipcMain.handle('writeConfig', writeConfig)
@@ -114,6 +130,21 @@ if (!gotTheLock) {
         ipcMain.handle('showImportPlaylistDialog', showImportPlaylistDialog);
         ipcMain.handle('createLyricWindow', createLyricWindow);
         ipcMain.handle('closeLyricWindow', () => lyricWindow.close());
+        ipcMain.handle('readSourceStorage', readSourceStorage);
+        ipcMain.handle('saveSourceStorage', saveSourceStorage);
+        ipcMain.handle('loadPlugins', () => {
+            const pluginDir = path.resolve(__dirname, 'plugins')
+            if (!fs.existsSync(pluginDir)) return []
+            return fs.readdirSync(pluginDir)
+                .filter(f => f.endsWith('.js'))
+                .map(f => {
+                    const code = fs.readFileSync(path.join(pluginDir, f), 'utf-8');
+                    return {
+                        name: f,
+                        code,
+                    }
+                })
+        });
         ipcMain.handle('toggleLyricWindow', () => {
             if (lyricWindow) {
                 if (lyricWindow.isVisible()) {
@@ -132,6 +163,22 @@ if (!gotTheLock) {
                 lyricWindow.setIgnoreMouseEvents(ignore, { forward: true });
             }
         });
+
+        ipcMain.handle('NeteaseAPIProxy', async (event, {funcName, args}) => {
+            if (typeof NeteaseAPI[funcName] === 'function') {
+                try {
+                    return await NeteaseAPI[funcName](...args);
+                } catch (e) {
+                    return {
+                        error: true,
+                        message: e.message
+                    }
+                }
+            }
+            console.warn(`NeteaseAPI[${funcName}] not found`);
+            throw new Error(`NeteaseAPI[${funcName}] not found`);
+        })
+
         ipcMain.on('minimize', () => mainWindow.minimize());
         ipcMain.on('exit', () => {
             const config = getConfig();

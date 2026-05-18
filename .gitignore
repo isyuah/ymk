@@ -33,7 +33,26 @@ vite.config.ts.timestamp-*
 
 # 项目排除路径
 /release/
+docs/
 *.md
+!README.md
 .trae
 .vscode
 .zread
+plugins
+.claude
+
+# 编译产物
+tools/**/v1-to-v2.exe
+*.exe
+
+# KuGouMusicApi 上游文件（非本项目维护）
+KuGouMusicApi/.github/
+KuGouMusicApi/.dockerignore
+KuGouMusicApi/.prettierrc.json
+KuGouMusicApi/Dockerfile
+KuGouMusicApi/docs/
+KuGouMusicApi/README.md
+KuGouMusicApi/nodemon.json
+KuGouMusicApi/vercel.json
+KuGouMusicApi/public/

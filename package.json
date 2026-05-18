@@ -18,9 +18,12 @@
     "makes": "electron-forge make --skip-package",
     "clean": "node ./release/clean.js",
     "debug": "npm-run-all --parallel dev start",
-    "build": "pnpm build-only && pnpm package && pnpm clean && pnpm makes"
+    "build": "pnpm build-only && pnpm package && pnpm clean && pnpm makes",
+    
+    "sdk:build": "pnpm --filter @yumuzk/plugin-api build"
   },
   "dependencies": {
+    "NeteaseCloudMusicApi": "^4.31.0",
     "axios": "^1.15.0",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.6.1",
@@ -30,7 +33,6 @@
     "fuse.js": "^7.1.0",
     "js-base64": "^3.7.8",
     "md5": "^2.3.0",
-    "mitt": "^3.0.1",
     "music-metadata": "^11.12.3",
     "node-forge": "^1.4.0",
     "normalize.css": "^8.0.1",
@@ -46,7 +48,8 @@
     "vue-pick-colors": "^1.8.0",
     "vue-router": "^4.6.3",
     "xml2js": "^0.6.2",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "@yumuzk/plugin-api": "workspace:*"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.10.2",

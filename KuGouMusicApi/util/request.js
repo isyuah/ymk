@@ -3,6 +3,7 @@ const { cryptoMd5 } = require('./crypto');
 const { signKey, signatureAndroidParams, signatureRegisterParams, signatureWebParams } = require('./helper');
 const { parseCookieString } = require('./util');
 const { appid, clientver, liteAppid, liteClientver } = require('./config.json');
+const { resolveProxy } = require('./runtime');
 
 /**
  * @typedef {{status: number;body: any, cookie: string[], headers?: Record<string, string>}} UseAxiosResponse
@@ -26,17 +27,18 @@ const { appid, clientver, liteAppid, liteClientver } = require('./config.json');
  * @param {string?} options.realIP
  * @returns {Promise<UseAxiosResponse>}
  */
+
 const createRequest = (options) => {
   return new Promise(async (resolve, reject) => {
     const isLite = process.env.platform === 'lite';
     const dfid = options?.cookie?.dfid || '-'; // 自定义
-    const mid = cryptoMd5(dfid); // 可以自定义
-    const uuid = cryptoMd5(`${dfid}${mid}`); // 可以自定义
+    const mid = `${options?.cookie?.KUGOU_API_MID}`; //'334689572176563962868706300678062568191';
+    const uuid = '-'; //cryptoMd5(`${dfid}${mid}`); // 可以自定义
     const token = options?.cookie?.token || '';
     const userid = options?.cookie?.userid || 0;
     const clienttime = Math.floor(Date.now() / 1000);
     const ip = options?.realIP || options?.ip || '';
-    const headers = { dfid, clienttime, mid };
+    const headers = { dfid, clienttime, mid, 'kg-rc': '1', 'kg-thash': '5d816a0', 'kg-rec': 1, 'kg-rf': 'B9EDA08A64250DEFFBCADDEE00F8F25F' };
 
     if (ip) {
       headers['X-Real-IP'] = ip;
@@ -48,13 +50,12 @@ const createRequest = (options) => {
       mid,
       uuid,
       appid: isLite ? liteAppid : appid,
-      // apiver: apiver,
       clientver: isLite ? liteClientver : clientver,
-      userid,
       clienttime,
     };
 
     if (token) defaultParams['token'] = token;
+    if (userid && userid !== 0) defaultParams['userid'] = userid;
     const params = options?.clearDefaultParams ? options?.params || {} : Object.assign({}, defaultParams, options?.params || {});
 
     headers['clienttime'] = params.clienttime;
@@ -64,7 +65,6 @@ const createRequest = (options) => {
     }
 
     const data = typeof options?.data === 'object' ? JSON.stringify(options.data) : options?.data || '';
-
 
     if (!params['signature'] && !options.notSignature) {
       switch (options?.encryptType) {
@@ -84,10 +84,11 @@ const createRequest = (options) => {
     // options.params = params;
     options['params'] = params;
     options['baseURL'] = options?.baseURL || 'https://gateway.kugou.com';
-    options['headers'] = Object.assign({}, options?.headers || {}, { dfid, clienttime: params.clienttime, mid });
-
-    console.log(params);
-    
+    options['headers'] = Object.assign({ 'User-Agent': 'Android15-1070-11083-46-0-DiscoveryDRADProtocol-wifi' }, options?.headers || {}, {
+      dfid,
+      clienttime: params.clienttime,
+      mid,
+    });
 
     const requestOptions = {
       params,
@@ -99,6 +100,11 @@ const createRequest = (options) => {
       withCredentials: true,
       responseType: options.responseType,
     };
+
+    const proxyConfig = resolveProxy();
+    if (proxyConfig) {
+      requestOptions.proxy = proxyConfig;
+    }
 
     if (options.data) requestOptions.data = options.data;
     if (params) requestOptions.params = params;
