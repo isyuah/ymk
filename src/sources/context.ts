@@ -1,5 +1,5 @@
 import axios, {type AxiosInstance} from "axios";
-import type {LoaderLike, MusicSource, SourceContextLike} from "@/sources/musicSource";
+import type {MusicSource, SourceContextLike} from "@/sources/musicSource";
 import {useSourceStorage} from "@/stores/sourceStore";
 import { Loader } from "@/utils/v2/loader";
 

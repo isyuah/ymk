@@ -1,52 +1,109 @@
 <template>
-<div class="transitionContainer">
-    <div @click="goBack" class="returnBtn">
-        <svg t="1711457272465" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4244" width="48" height="48"><path d="M963.2 0L1024 67.2 512 614.4 0 67.2 60.8 0 512 480 963.2 0z" fill="currentColor" p-id="4245"></path></svg>
+  <div class="transitionContainer">
+    <div
+      class="returnBtn"
+      @click="goBack"
+    >
+      <svg
+        t="1711457272465"
+        class="icon"
+        viewBox="0 0 1024 1024"
+        version="1.1"
+        xmlns="http://www.w3.org/2000/svg"
+        p-id="4244"
+        width="48"
+        height="48"
+      ><path
+        d="M963.2 0L1024 67.2 512 614.4 0 67.2 60.8 0 512 480 963.2 0z"
+        fill="currentColor"
+        p-id="4245"
+      /></svg>
     </div>
     <div class="partContainer DEF-SONGLIST">
-        <div class="listInfo">
-            <div class="faceImg forbidSelect" :class="{ circular: displayMode === 'artist' }">
-                <img referrerpolicy="no-referrer" :src="runtimeData.currentPlaylist!.document.pic" alt="">
-            </div>
-            <div class="info forbidSelect">
-                <div class="top">
-                  <div class="title">{{ runtimeData.currentPlaylist!.document.title }}</div>
-                  <button @click="toggleSubscription(runtimeData.currentPlaylist)" class="subscribeBtn" v-if="runtimeData.currentPlaylist?.entryMetadata?.[0]?.canSubscribe">{{runtimeData.currentPlaylist.entryMetadata?.[0]?.subscribed ? '取消收藏' : '收藏'}}</button>
-                </div>
-                <div class="bottom">
-                    <div class="total">总共 {{ runtimeData.currentPlaylist?.songs.length ?? 0 }} 首</div>
-                    <div class="intro">{{ runtimeData.currentPlaylist?.document.intro ?? 'No Intro Here'}}</div>
-                    <button @click="playAll" class="PlayAll">
-                        <span class="chevron"></span>
-                        <div class="text">播放全部</div>
-                    </button>
-                </div>
-            </div>
+      <div class="listInfo">
+        <div
+          class="faceImg forbidSelect"
+          :class="{ circular: displayMode === 'artist' }"
+        >
+          <img
+            referrerpolicy="no-referrer"
+            :src="runtimeData.currentPlaylist!.document.pic"
+            alt=""
+          >
         </div>
-        <div class="tablePartContainer">
-          <div class="divider forbidSelect">
-            <div class="dividerTip">歌曲列表</div>
-            <div class="divideLine"></div>
-            <input v-model="filter" class="search" placeholder="搜索" />
-          </div>
-          <div class="songs">
-            <div class="container">
-              <VirtualList :item-height="38" :items="showingSongList" :size="8" v-slot="{item: ITEM}" class-name="songTable">
-<!--                    TODO:: 批量查询歌曲disable-->
-                <div
-                    @dblclick="playSong(ITEM.item)"
-                    class="song"
-                    :class="{disabled: false}"
-                    @contextmenu.prevent="tryShowMenu({song: ITEM.item,si: ITEM.refIndex})">
-                  <div class="songInfo title">{{ ITEM.item.title }}<sub>{{ ITEM.item.sourceType }}</sub></div>
-                  <div class="songInfo author">{{ ITEM.item.singer }}</div>
-                </div>
-              </VirtualList>
+        <div class="info forbidSelect">
+          <div class="top">
+            <div class="title">
+              {{ runtimeData.currentPlaylist!.document.title }}
             </div>
+            <button
+              v-if="runtimeData.currentPlaylist?.entryMetadata?.[0]?.canSubscribe"
+              class="subscribeBtn"
+              @click="toggleSubscription(runtimeData.currentPlaylist)"
+            >
+              {{ runtimeData.currentPlaylist.entryMetadata?.[0]?.subscribed ? '取消收藏' : '收藏' }}
+            </button>
+          </div>
+          <div class="bottom">
+            <div class="total">
+              总共 {{ runtimeData.currentPlaylist?.songs.length ?? 0 }} 首
+            </div>
+            <div class="intro">
+              {{ runtimeData.currentPlaylist?.document.intro ?? 'No Intro Here' }}
+            </div>
+            <button
+              class="PlayAll"
+              @click="playAll"
+            >
+              <span class="chevron" />
+              <div class="text">
+                播放全部
+              </div>
+            </button>
           </div>
         </div>
+      </div>
+      <div class="tablePartContainer">
+        <div class="divider forbidSelect">
+          <div class="dividerTip">
+            歌曲列表
+          </div>
+          <div class="divideLine" />
+          <input
+            v-model="filter"
+            class="search"
+            placeholder="搜索"
+          >
+        </div>
+        <div class="songs">
+          <div class="container">
+            <VirtualList
+              v-slot="{item: ITEM}"
+              :item-height="38"
+              :items="showingSongList"
+              :size="8"
+              class-name="songTable"
+            >
+              <!--                    TODO:: 批量查询歌曲disable-->
+              <div
+                class="song"
+                :class="{disabled: false}"
+                @dblclick="playSong(ITEM.item)"
+                @contextmenu.prevent="tryShowMenu({song: ITEM.item,si: ITEM.refIndex})"
+              >
+                <div class="songInfo title">
+                  {{ ITEM.item.title }}<sub>{{ ITEM.item.sourceType }}</sub>
+                </div>
+                <div class="songInfo author">
+                  {{ ITEM.item.singer }}
+                </div>
+              </div>
+            </VirtualList>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 </template>
 
 <script setup lang='ts'>
@@ -114,7 +171,7 @@ watch(() => runtimeData.currentPlaylist, (nv) => {
 }, {deep: true})
 let showingSongList = computed(() => {
   nextTick(() => emitter.emit('virtualList-refresh'))
-  if (!filter.value) {1
+  if (!filter.value) {
     return runtimeData.currentPlaylist!.songs.map((element, index) => ({item: element, refIndex: index}))
   } else {
     // 使用拼音搜索
@@ -180,14 +237,21 @@ function tryShowMenu({song, si}: {song: SongBase, si: number}) {
         title: '编辑歌曲信息',
         show: hasEdit,
         action: ({song}) => {
-          showDialog(EditSongInfoDialog, { song, playlist: pl, sourceType })
+          showDialog(EditSongInfoDialog, { song, playlist: pl, sourceType, onConfirm: (info) => {
+            song.title = info.title
+            song.singer = info.singer
+            song.pic = info.pic
+          } })
         },
       },
       {
         title: '自定义歌词',
         show: hasLyric,
         action: ({song}) => {
-          showDialog(CustomLyricDialog, { song, playlist: pl, sourceType })
+          showDialog(CustomLyricDialog, { song, playlist: pl, sourceType, onConfirm: (ref) => {
+            if (ref) song.lyricOverride = ref
+            else delete song.lyricOverride
+          } })
         },
       },
     ],

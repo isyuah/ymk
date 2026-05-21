@@ -1,12 +1,20 @@
 <template>
-<div ref="mouseMenuContainer" class="mouseMenuContainer forbidSelect">
+  <div
+    ref="mouseMenuContainer"
+    class="mouseMenuContainer forbidSelect"
+  >
     <div class="menulist">
-        <div v-show="m.show ?? true" @click="handleClick(m)"
-             v-for="m in menuItems" class="menuItem">
-            {{ m.title }}
-        </div>
+      <div
+        v-for="(m, mi) in menuItems"
+        v-show="m.show ?? true"
+        :key="mi"
+        class="menuItem"
+        @click="handleClick(m)"
+      >
+        {{ m.title }}
+      </div>
     </div>
-</div>
+  </div>
 </template>
 
 <script setup lang='ts' generic="T">

@@ -1,17 +1,38 @@
 <template>
   <div class="dialogPreviewContainer DEF-DIALOG-CONTENT">
-    <div class="header">预览</div>
+    <div class="header">
+      预览
+    </div>
     <div class="content">
       <div class="typeChoose">
-        <DSelect style="width: 400px" v-model="targetPlatform" :options="platformOptions"></DSelect>
+        <DSelect
+          v-model="targetPlatform"
+          style="width: 400px"
+          :options="platformOptions"
+        />
       </div>
       <div>
-        <input style="width: 400px" v-model="previewLink" type="text" placeholder="输入链接或 ID" />
+        <input
+          v-model="previewLink"
+          style="width: 400px"
+          type="text"
+          placeholder="输入链接或 ID"
+        >
       </div>
     </div>
     <div class="footer">
-      <button @click="preview" class="dialogBtn confirm">预览</button>
-      <button @click="closeDialog" class="dialogBtn cancel">取消</button>
+      <button
+        class="dialogBtn confirm"
+        @click="preview"
+      >
+        预览
+      </button>
+      <button
+        class="dialogBtn cancel"
+        @click="closeDialog"
+      >
+        取消
+      </button>
     </div>
   </div>
 </template>

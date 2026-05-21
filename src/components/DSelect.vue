@@ -1,15 +1,34 @@
 <template>
-  <div class="custom-select" :class="{ 'is-open': isOpen, 'is-disabled': disabled }">
-    <div class="select-trigger" @click="toggleDropdown">
+  <div
+    class="custom-select"
+    :class="{ 'is-open': isOpen, 'is-disabled': disabled }"
+  >
+    <div
+      class="select-trigger"
+      @click="toggleDropdown"
+    >
       <span class="selected-value">{{ selectedLabel }}</span>
       <span class="select-arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </span>
     </div>
     <Transition name="dropdown">
-      <div v-show="isOpen" class="options-container">
+      <div
+        v-show="isOpen"
+        class="options-container"
+      >
         <ul class="options-list">
           <li 
             v-for="option in options" 

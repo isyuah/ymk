@@ -1,0 +1,7 @@
+dist/
+node_modules/
+release/
+out/
+ignoreFolder/
+KuGouMusicApi/
+*.timestamp-*.mjs

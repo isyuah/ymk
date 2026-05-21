@@ -1,11 +1,19 @@
 <template>
-<div class="messageContainer">
-    <Transition name="message" @after-leave="handleAfterLeave">
-        <div v-show="show && message" class="message">
-            <div class="text">{{ message }}</div>
+  <div class="messageContainer">
+    <Transition
+      name="message"
+      @after-leave="handleAfterLeave"
+    >
+      <div
+        v-show="show && message"
+        class="message"
+      >
+        <div class="text">
+          {{ message }}
         </div>
+      </div>
     </Transition>
-</div>
+  </div>
 </template>
 
 <script setup lang='ts'>

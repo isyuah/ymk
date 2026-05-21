@@ -42,16 +42,32 @@ watch(() => items, refresh)
 </script>
 
 <template>
-  <div ref="container" :class="className" class="list-container" @scroll.passive="handleScroll">
-    <div class="list" :style="{transform: `translateY(${offsetTop}px)`}">
-      <div class="list-item"
-           v-for="(item, index) in displayingItems"
-           :key="startIndex + index"
-           :style="{ height: itemHeight + 'px' }">
-        <slot :item="item" :index="startIndex + index"></slot>
+  <div
+    ref="container"
+    :class="className"
+    class="list-container"
+    @scroll.passive="handleScroll"
+  >
+    <div
+      class="list"
+      :style="{transform: `translateY(${offsetTop}px)`}"
+    >
+      <div
+        v-for="(item, index) in displayingItems"
+        :key="startIndex + index"
+        class="list-item"
+        :style="{ height: itemHeight + 'px' }"
+      >
+        <slot
+          :item="item"
+          :index="startIndex + index"
+        />
       </div>
     </div>
-    <div class="wrapper" :style="{height: `${itemHeight * items.length}px`}"></div>
+    <div
+      class="wrapper"
+      :style="{height: `${itemHeight * items.length}px`}"
+    />
   </div>
 </template>
 

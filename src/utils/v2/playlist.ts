@@ -21,33 +21,33 @@ export async function navigateToPlaylistDetail(playlist: RuntimePlaylist) {
     const total = playlist.document.entries.length;
     loader.setText(`加载中 0 / ${total}`)
     const entryMetadata: LoadedPlaylist['entryMetadata'] = Array.from({length: total})
-    const songsPromise = await trackProgressSettled(playlist.document.entries.map((entry, entryIndex) => {
-      return new Promise<SongBase[]>(async (resolve, reject) => {
-        if (entry.kind === 'inlineSongs') {
-          resolve(entry.songs)
-        } else {
-          if (!sourceRegistry.sources.has(entry.ref.sourceType)) {
-            console.warn(`[navigateToPlaylistDetail] 无法加载歌单，源未找到: ${entry.ref.sourceType}`)
-            showMessage(`无法加载歌单，源未找到: ${entry.ref.sourceType}`, 5000)
-            reject()
-            return;
-          }
-          const ability = sourceRegistry.sources.get(entry.ref.sourceType)?.getAvailability('resolvePlaylist')
-          if (!ability?.available) {
-            console.warn(`[navigateToPlaylistDetail] 无法加载歌单，源不支持解析歌单: ${entry.ref.sourceType}`)
-            showMessage(`无法加载歌单，源不支持解析歌单: ${entry.ref.sourceType}`, 5000)
-            reject()
-            return;
-          }
-          const rp = (await ability.invoke!(entry.ref));
-          entryMetadata[entryIndex] = rp.meta;
-          resolve(rp.songs)
-        }
-      })
+    const songsPromise = await trackProgressSettled(playlist.document.entries.map(async (entry, entryIndex) => {
+      if (entry.kind === 'inlineSongs') {
+        return entry.songs;
+      } 
+      
+      if (!sourceRegistry.sources.has(entry.ref.sourceType)) {
+        console.warn(`[navigateToPlaylistDetail] 无法加载歌单，源未找到: ${entry.ref.sourceType}`)
+        showMessage(`无法加载歌单，源未找到: ${entry.ref.sourceType}`, 5000)
+        throw new Error(`源未找到: ${entry.ref.sourceType}`);
+      }
+      
+      const ability = sourceRegistry.sources.get(entry.ref.sourceType)?.getAvailability('resolvePlaylist')
+      if (!ability?.available) {
+        console.warn(`[navigateToPlaylistDetail] 无法加载歌单，源不支持解析歌单: ${entry.ref.sourceType}`)
+        showMessage(`无法加载歌单，源不支持解析歌单: ${entry.ref.sourceType}`, 5000)
+        throw new Error(`源不支持解析歌单: ${entry.ref.sourceType}`);
+      }
+      
+      const rp = await ability.invoke!(entry.ref);
+      entryMetadata[entryIndex] = rp.meta;
+      return rp.songs;
     }),
-        (done) => {
-          loader.setText(`加载中 ${done} / ${total}`)
-        })
+    (done) => {
+      loader.setText(`加载中 ${done} / ${total}`)
+    })
+
+    // 后续逻辑保持不变
     const songs = songsPromise
         .filter(r => r.status === 'fulfilled')
         .map(r => r.value)
@@ -84,7 +84,7 @@ async function resolveAndNavigate(
     return;
   }
 
-  using loader = new Loader('加载中');
+  using _loader = new Loader('加载中');
   const r = await ability.invoke(ref);
   const songs = toSongs(r);
   const runtimeData = useRuntimeDataStore();

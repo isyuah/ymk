@@ -1,18 +1,49 @@
 <template>
-<div class="partContainer forbidSelect">
-  <simplebar class="simplebar">
-    <Transition name="uianim">
-      <div class="playlistControllers">
-        <button @click="importPlaylist" class="controllerButton import">导入</button>
-        <button @click="refreshPlaylists()" class="controllerButton import">刷新</button>
-        <button @click="showPreviewDialog" class="controllerButton import">预览</button>
-        <button @click="testFunc" class="controllerButton test">测试</button>
-        <button @click="testFunc2" class="controllerButton test">测试2</button>
-      </div>
-    </Transition>
-    <PlaylistView />
-  </simplebar>
-</div>
+  <div class="partContainer forbidSelect">
+    <simplebar class="simplebar">
+      <Transition
+        name="uianim"
+        appear
+      >
+        <div
+          v-if="true"
+          class="playlistControllers"
+        >
+          <button
+            class="controllerButton import"
+            @click="importPlaylist"
+          >
+            导入
+          </button>
+          <button
+            class="controllerButton import"
+            @click="refreshPlaylists()"
+          >
+            刷新
+          </button>
+          <button
+            class="controllerButton import"
+            @click="showPreviewDialog"
+          >
+            预览
+          </button>
+          <button
+            class="controllerButton test"
+            @click="testFunc"
+          >
+            测试
+          </button>
+          <button
+            class="controllerButton test"
+            @click="testFunc2"
+          >
+            测试2
+          </button>
+        </div>
+      </Transition>
+      <PlaylistView />
+    </simplebar>
+  </div>
 </template>
 
 <script setup lang='ts'>

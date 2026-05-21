@@ -250,7 +250,7 @@ class BilibiliSource extends MusicSource {
   private async proxyWbi<T = any>(req: ProxyReq): Promise<T> {
     if (!this.wbi.valid) await this.refreshWbiKeys();
     const params = encWbi(
-      { ...(req.params ?? {}) },
+      { ...req.params },
       this.wbi.img_key,
       this.wbi.sub_key,
     );

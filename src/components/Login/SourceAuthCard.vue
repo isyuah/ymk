@@ -38,30 +38,52 @@ onMounted(checkLoginState);
 
 <template>
   <div class="userContainer">
-    <div class="title">{{ source.name }}</div>
+    <div class="title">
+      {{ source.name }}
+    </div>
 
     <!-- 已登录 -->
-    <div v-if="logined && userInfo" class="loginedContainer">
+    <div
+      v-if="logined && userInfo"
+      class="loginedContainer"
+    >
       <div class="userInfo">
         <img
           referrerpolicy="no-referrer"
           :src="userInfo.avatar"
           class="avatar"
           :alt="userInfo.nickname"
-        />
+        >
         <div class="user">
-          <div class="nickname">{{ userInfo.nickname }}</div>
-          <div class="signature">{{ userInfo.signature || '暂无简介' }}</div>
+          <div class="nickname">
+            {{ userInfo.nickname }}
+          </div>
+          <div class="signature">
+            {{ userInfo.signature || '暂无简介' }}
+          </div>
         </div>
       </div>
-      <button class="userCenterControlBtn" @click="checkLoginState">刷新状态</button>
-      <button class="userCenterControlBtn" @click="logout">退出登录</button>
+      <button
+        class="userCenterControlBtn"
+        @click="checkLoginState"
+      >
+        刷新状态
+      </button>
+      <button
+        class="userCenterControlBtn"
+        @click="logout"
+      >
+        退出登录
+      </button>
     </div>
 
     <!-- 未登录 -->
     <template v-else>
       <!-- 未选择方式 -->
-      <div class="tab unloginTab" v-if="!selectedMethod">
+      <div
+        v-if="!selectedMethod"
+        class="tab unloginTab"
+      >
         <button
           v-for="method in auth.methods"
           :key="method.type"
@@ -85,7 +107,12 @@ onMounted(checkLoginState);
           @success="onLoginSuccess"
         />
         <div class="backRow">
-          <button class="loginBtn" @click="selectedMethod = null">返回</button>
+          <button
+            class="loginBtn"
+            @click="selectedMethod = null"
+          >
+            返回
+          </button>
         </div>
       </template>
     </template>

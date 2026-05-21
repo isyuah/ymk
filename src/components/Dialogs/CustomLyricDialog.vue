@@ -1,20 +1,46 @@
 <template>
   <div class="customLyricDialogContainer DEF-DIALOG-CONTENT">
-    <div class="header">自定义歌词来源</div>
+    <div class="header">
+      自定义歌词来源
+    </div>
     <div class="content">
       <div class="field">
         <label>源</label>
-        <DSelect v-model="sourceType" :options="lyricSourceOptions" />
+        <DSelect
+          v-model="sourceType"
+          :options="lyricSourceOptions"
+        />
       </div>
       <div class="field">
         <label>标识</label>
-        <input v-model="symbol" type="text" class="fieldInput" placeholder="歌曲 ID / Hash" @keyup.enter="confirm" />
+        <input
+          v-model="symbol"
+          type="text"
+          class="fieldInput"
+          placeholder="歌曲 ID / Hash"
+          @keyup.enter="confirm"
+        >
       </div>
     </div>
     <div class="footer">
-      <button @click="confirm" class="dialogBtn confirm">确认</button>
-      <button @click="clear" class="dialogBtn clear">清除自定义</button>
-      <button @click="closeDialog" class="dialogBtn cancel">取消</button>
+      <button
+        class="dialogBtn confirm"
+        @click="confirm"
+      >
+        确认
+      </button>
+      <button
+        class="dialogBtn clear"
+        @click="clear"
+      >
+        清除自定义
+      </button>
+      <button
+        class="dialogBtn cancel"
+        @click="closeDialog"
+      >
+        取消
+      </button>
     </div>
   </div>
 </template>
@@ -33,6 +59,7 @@ const props = defineProps<{
     song: SongBase
     playlist: RuntimePlaylist
     sourceType: string
+    onConfirm?: (ref: SourceEntityRef | undefined) => void
   }
 }>()
 
@@ -53,7 +80,7 @@ async function confirm() {
         type: SourceEntityType.Song,
       }
       await ability.invoke(props.data.song, props.data.playlist, ref)
-      props.data.song.lyricOverride = ref
+      props.data.onConfirm?.(ref)
       showMessage('自定义歌词设置成功')
       props.closeDialog()
     }
@@ -68,7 +95,7 @@ async function clear() {
     const ability = source?.getAvailability('customizeLyric')
     if (ability?.available) {
       await ability.invoke(props.data.song, props.data.playlist, undefined as any)
-      delete props.data.song.lyricOverride
+      props.data.onConfirm?.(undefined)
       showMessage('已清除自定义歌词')
       props.closeDialog()
     }

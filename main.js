@@ -1,7 +1,7 @@
 import {app, BrowserWindow, dialog, ipcMain, net, protocol, screen} from 'electron'
 import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
-import {checkFolders, checkResources, startNcmServer} from "./utils/utils.js";
+import {checkFolders, checkResources} from "./utils/utils.js";
 import {startService} from './KuGouMusicApi/server.js'
 import express from "express";
 import process from 'process';
@@ -37,7 +37,7 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
     app.quit()
 } else {
-    app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    app.on('second-instance', (event, commandLine, _workingDirectory, _additionalData) => {
         if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore()
             mainWindow.focus()
@@ -188,7 +188,8 @@ if (!gotTheLock) {
                 } else {
                     mainWindow.close();
                 }
-            } catch (error) {
+            } catch (e) {
+                console.error(e);
                 mainWindow.close();
             }
         })
@@ -292,6 +293,7 @@ function getCursorPos() {
         top: sp.y - wp[1],
     };
 }
-} catch(err) {
+} catch(e) {
+    console.error(e);
     process.exit(1)
 }

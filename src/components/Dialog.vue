@@ -1,8 +1,18 @@
 <template>
-  <Transition name="uianim" @after-leave="onDestroy">
-    <div v-show="visible" class="dialogMask">
+  <Transition
+    name="uianim"
+    @after-leave="onDestroy"
+  >
+    <div
+      v-show="visible"
+      class="dialogMask"
+    >
       <div class="dialogContainer">
-        <component :closeDialog="handleClose" :is="component" :data="data" />
+        <component
+          :is="component"
+          :close-dialog="handleClose"
+          :data="data"
+        />
       </div>
     </div>
   </Transition>

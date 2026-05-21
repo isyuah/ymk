@@ -2,6 +2,8 @@ name: Forge Pack Clean Make (Windows)
 
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
 
@@ -61,3 +63,43 @@ jobs:
           files: |
             release/make/**
 
+      - name: Notify Discord
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"
+            COLOR="5763719"
+          elif [ "$STATUS" = "failure" ]; then
+            EMOJI="❌"
+            COLOR="15548997"
+          else
+            EMOJI="⚠️"
+            COLOR="16776960"
+          fi
+          curl -s -X POST "$DISCORD_HOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg emoji "$EMOJI" \
+              --arg color "$COLOR" \
+              --arg status "$STATUS" \
+              --arg repo "${{ github.repository }}" \
+              --arg ref "${{ github.ref_name }}" \
+              --arg sha "$(echo '${{ github.sha }}' | cut -c1-7)" \
+              --arg actor "${{ github.actor }}" \
+              --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              '{
+                embeds: [{
+                  title: "\($emoji) [\($repo)] Build \($status)",
+                  color: ($color | tonumber),
+                  fields: [
+                    { name: "Branch/Tag", value: "\($ref)", inline: true },
+                    { name: "Commit", value: "`\($sha)`", inline: true },
+                    { name: "Triggered by", value: "\($actor)", inline: true },
+                    { name: "OS", value: "${{ runner.os }}", inline: true }
+                  ],
+                  url: "\($run_url)"
+                }]
+              }')"
+        env:
+          DISCORD_HOOK_URL: ${{ secrets.DISCORD_HOOK_URL }}

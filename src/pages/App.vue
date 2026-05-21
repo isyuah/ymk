@@ -1,31 +1,108 @@
 <template>
-  <div class="colorSetter" :style="colorVars" @drop.prevent="dropEvent" @dragover.prevent>
-    <div v-if="backgroundType" class="backgroundFrame forbidSelect">
-      <div class="mask" :style="`background-color: rgba(0,0,0,${config.maskOpacity});`"></div>
-      <img :src="config.bg" v-if="backgroundType === 'img'">
-      <video ref="videoBg" v-if="backgroundType === 'video'" @pause="videoBg?.play()" autoplay muted loop class="object-cover wh100" :src="config.bg"></video>
+  <div
+    class="colorSetter"
+    :style="colorVars"
+    @drop.prevent="dropEvent"
+    @dragover.prevent
+  >
+    <div
+      v-if="backgroundType"
+      class="backgroundFrame forbidSelect"
+    >
+      <div
+        class="mask"
+        :style="`background-color: rgba(0,0,0,${config.maskOpacity});`"
+      />
+      <img
+        v-if="backgroundType === 'img'"
+        :src="config.bg"
+      >
+      <video
+        v-if="backgroundType === 'video'"
+        ref="videoBg"
+        autoplay
+        muted
+        loop
+        class="object-cover wh100"
+        :src="config.bg"
+        @pause="videoBg?.play()"
+      />
     </div>
     <div class="container">
-      <div style="-webkit-app-region: drag" class="header forbidSelect noPointerEvents">
+      <div
+        style="-webkit-app-region: drag"
+        class="header forbidSelect noPointerEvents"
+      >
         <Transition name="fade">
-          <div v-show="!runtimeData.showFullPlay" class="title">Yumuzk</div>
-        </Transition>
-        <Transition appear name="fade">
-          <div style="-webkit-app-region: no-drag;" v-show="!runtimeData.showFullPlay" class="tabs allPointerEvents">
-            <RouterLink to="/playlist" :class="{tab: true, active: runtimeData.nowTab === 'playlist'}">首页</RouterLink>
-<!--            <RouterLink to="/recommendedPlaylists" :class="{tab: true, active: runtimeData.nowTab === 'recommendedPlaylists'}">推荐</RouterLink>-->
-            <RouterLink to="/playlistDetail" v-if="runtimeData.currentPlaylist" :class="{tab: true, active: runtimeData.nowTab === 'playlistDetail'}">{{ detailTabLabel }}</RouterLink>
-            <RouterLink to="/search" :class="{tab: true, active: runtimeData.nowTab === 'search'}">搜索</RouterLink>
-            <RouterLink to="/userCenter" :class="{tab: true, active: runtimeData.nowTab === 'userCenter'}">
-              <div class="text">用户</div>
-<!--              <img v-if="user.neteaseUser.avatarUrl" style="border-radius: 50%;margin-left: 4px;margin-top:6px; height: 28px;" :src="user.neteaseUser.avatarUrl" alt="">-->
-            </RouterLink>
-            <RouterLink to="/settings" :class="{tab: true, active: runtimeData.nowTab === 'Settings'}">设置</RouterLink>
+          <div
+            v-show="!runtimeData.showFullPlay"
+            class="title"
+          >
+            Yumuzk
           </div>
         </Transition>
-        <div style="-webkit-app-region: no-drag;" class="controlbtn noPointerEvents">
-          <button @click="minimize()" class="btn allPointerEvents minimize">-</button>
-          <button @click="exit(1)" class="btn allPointerEvents close">×</button>
+        <Transition
+          appear
+          name="fade"
+        >
+          <div
+            v-show="!runtimeData.showFullPlay"
+            style="-webkit-app-region: no-drag;"
+            class="tabs allPointerEvents"
+          >
+            <RouterLink
+              to="/playlist"
+              :class="{tab: true, active: runtimeData.nowTab === 'playlist'}"
+            >
+              首页
+            </RouterLink>
+            <!--            <RouterLink to="/recommendedPlaylists" :class="{tab: true, active: runtimeData.nowTab === 'recommendedPlaylists'}">推荐</RouterLink>-->
+            <RouterLink
+              v-if="runtimeData.currentPlaylist"
+              to="/playlistDetail"
+              :class="{tab: true, active: runtimeData.nowTab === 'playlistDetail'}"
+            >
+              {{ detailTabLabel }}
+            </RouterLink>
+            <RouterLink
+              to="/search"
+              :class="{tab: true, active: runtimeData.nowTab === 'search'}"
+            >
+              搜索
+            </RouterLink>
+            <RouterLink
+              to="/userCenter"
+              :class="{tab: true, active: runtimeData.nowTab === 'userCenter'}"
+            >
+              <div class="text">
+                用户
+              </div>
+              <!--              <img v-if="user.neteaseUser.avatarUrl" style="border-radius: 50%;margin-left: 4px;margin-top:6px; height: 28px;" :src="user.neteaseUser.avatarUrl" alt="">-->
+            </RouterLink>
+            <RouterLink
+              to="/settings"
+              :class="{tab: true, active: runtimeData.nowTab === 'Settings'}"
+            >
+              设置
+            </RouterLink>
+          </div>
+        </Transition>
+        <div
+          style="-webkit-app-region: no-drag;"
+          class="controlbtn noPointerEvents"
+        >
+          <button
+            class="btn allPointerEvents minimize"
+            @click="minimize()"
+          >
+            -
+          </button>
+          <button
+            class="btn allPointerEvents close"
+            @click="exit(1)"
+          >
+            ×
+          </button>
         </div>
       </div>
       <div class="content">
@@ -33,11 +110,17 @@
           <Transition name="fade">
             <Loading v-if="loadingStore.isLoading" />
           </Transition>
-          <div v-show="!runtimeData.showFullPlay" class="route-content">
+          <div
+            v-show="!runtimeData.showFullPlay"
+            class="route-content"
+          >
             <transition name="uianim">
               <keep-alive :exclude="['UserCenter', 'PlaylistDetail', 'Settings']">
                 <Suspense>
-                  <component :is="Component" :key="route.fullPath" />
+                  <component
+                    :is="Component"
+                    :key="route.fullPath"
+                  />
                   <template #fallback>
                     <Loading />
                   </template>
@@ -47,10 +130,10 @@
           </div>
         </router-view>
       </div>
-      <Playbar></Playbar>
+      <Playbar />
     </div>
     <Transition name="uianim">
-      <FullPlay v-show="runtimeData.showFullPlay"></FullPlay>
+      <FullPlay v-show="runtimeData.showFullPlay" />
     </Transition>
   </div>
 </template>

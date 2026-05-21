@@ -23,7 +23,7 @@ app.use(FloatingVue)
 app.use(router)
 
 const runtimeData = useRuntimeDataStore()
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
   if (to.path === '/playlistDetail' && !runtimeData.currentPlaylist) return {path: '/playlist'};
   if (to.matched.length === 0) return {path: '/playlist'};
   if (to.path !== '/') runtimeData.nowTab = to.path.substring(1)

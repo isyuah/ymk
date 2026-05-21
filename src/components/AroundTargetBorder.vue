@@ -1,13 +1,13 @@
 <template>
-    <div class="line topleft"></div>
-    <div class="line topright"></div>
-    <div class="line lefttop"></div>
-    <div class="line leftbottom"></div>
-    <div class="line righttop"></div>
-    <div class="line rightbottom"></div>
-    <div class="line bottomleft"></div>
-    <div class="line bottomright"></div>
-    <slot></slot>
+  <div class="line topleft" />
+  <div class="line topright" />
+  <div class="line lefttop" />
+  <div class="line leftbottom" />
+  <div class="line righttop" />
+  <div class="line rightbottom" />
+  <div class="line bottomleft" />
+  <div class="line bottomright" />
+  <slot />
 </template>
     
 <script setup lang='ts'>

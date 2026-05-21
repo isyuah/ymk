@@ -27,10 +27,26 @@ async function submit() {
 
 <template>
   <div class="cookieLogin">
-    <div class="text">请输入 Cookie</div>
-    <textarea v-model="input" placeholder="粘贴 Cookie..." rows="4" />
-    <div v-if="error" class="error">{{ error }}</div>
-    <button class="loginBtn" @click="submit">确认</button>
+    <div class="text">
+      请输入 Cookie
+    </div>
+    <textarea
+      v-model="input"
+      placeholder="粘贴 Cookie..."
+      rows="4"
+    />
+    <div
+      v-if="error"
+      class="error"
+    >
+      {{ error }}
+    </div>
+    <button
+      class="loginBtn"
+      @click="submit"
+    >
+      确认
+    </button>
   </div>
 </template>
 

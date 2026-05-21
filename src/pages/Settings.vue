@@ -47,77 +47,166 @@ function saveOtherConfig () {
 </script>
 
 <template>
-<div class="SettingsContainer">
-  <simplebar class="simplebar">
-    <div class="SettingsPane">
-      <div class="title">API</div>
-      <div class="content">
-        <div class="Input">
-          <div class="label">网易云</div>
-          <input class="input" v-model="apiConfig.neteaseUrl" type="text" />
+  <div class="SettingsContainer">
+    <simplebar class="simplebar">
+      <div class="SettingsPane">
+        <div class="title">
+          API
         </div>
-        <div class="Input">
-          <div class="label">QQ</div>
-          <input class="input" v-model="apiConfig.qqUrl" type="text" />
-        </div>
-        <div class="controlBtns">
-          <div @click="saveApiConfig" class="controlBtn">保存</div>
-        </div>
-      </div>
-    </div>
-    <div class="SettingsPane">
-      <div class="title">外观</div>
-      <div class="content">
-        <div class="Input">
-          <div class="label">背景</div>
-          <input class="input" v-model="tmpConfig.bg" type="text" />
-        </div>
-        <div class="Input">
-          <div class="label">透明度</div>
-          <input class="input" v-model="tmpConfig.maskOpacity" type="text" />
-        </div>
-        <div class="Input">
-          <div class="label">默认歌单</div>
-          <input placeholder="文件名(like按钮保存的位置)" class="input" v-model="tmpConfig.defaultPlaylist" type="text" />
-        </div>
-        <div class="controlBtns">
-          <div @click="saveBgConfig" class="controlBtn">保存</div>
-        </div>
-      </div>
-    </div>
-    <div class="SettingsPane">
-      <div class="title">颜色</div>
-      <div class="content">
-        <div class="colorsSetter">
-          <div v-for="(_, k) in config.colors" class="colorInput">
-            <div class="label">{{k}}</div>
-            <PickColors style="vertical-align: top" show-alpha format="rgb" :format-options="['rgb', 'hex']" v-model:value="config.colors[k]" />
+        <div class="content">
+          <div class="Input">
+            <div class="label">
+              网易云
+            </div>
+            <input
+              v-model="apiConfig.neteaseUrl"
+              class="input"
+              type="text"
+            >
+          </div>
+          <div class="Input">
+            <div class="label">
+              QQ
+            </div>
+            <input
+              v-model="apiConfig.qqUrl"
+              class="input"
+              type="text"
+            >
+          </div>
+          <div class="controlBtns">
+            <div
+              class="controlBtn"
+              @click="saveApiConfig"
+            >
+              保存
+            </div>
           </div>
         </div>
-        <div class="controlBtns">
-          <div @click="saveColorsConfig" class="controlBtn">保存</div>
+      </div>
+      <div class="SettingsPane">
+        <div class="title">
+          外观
+        </div>
+        <div class="content">
+          <div class="Input">
+            <div class="label">
+              背景
+            </div>
+            <input
+              v-model="tmpConfig.bg"
+              class="input"
+              type="text"
+            >
+          </div>
+          <div class="Input">
+            <div class="label">
+              透明度
+            </div>
+            <input
+              v-model="tmpConfig.maskOpacity"
+              class="input"
+              type="text"
+            >
+          </div>
+          <div class="Input">
+            <div class="label">
+              默认歌单
+            </div>
+            <input
+              v-model="tmpConfig.defaultPlaylist"
+              placeholder="文件名(like按钮保存的位置)"
+              class="input"
+              type="text"
+            >
+          </div>
+          <div class="controlBtns">
+            <div
+              class="controlBtn"
+              @click="saveBgConfig"
+            >
+              保存
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="SettingsPane forbidSelect">
-      <div class="title">其他</div>
-      <div class="content">
-        <div class="Checkbox">
-          <input id="minimizeToTray" class="input" v-model="tmpConfig.minimizeToTray" type="checkbox" />
-          <label for="minimizeToTray" class="label">关闭窗口后最小化到托盘</label>
-          <label for="minimizeToTray" class="checkmark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12l5 5L20 7"></path>
-            </svg>
-          </label>
+      <div class="SettingsPane">
+        <div class="title">
+          颜色
         </div>
-        <div class="controlBtns">
-          <div @click="saveOtherConfig" class="controlBtn">保存</div>
+        <div class="content">
+          <div class="colorsSetter">
+            <div
+              v-for="(_, k) in config.colors"
+              :key="k"
+              class="colorInput"
+            >
+              <div class="label">
+                {{ k }}
+              </div>
+              <PickColors
+                v-model:value="config.colors[k]"
+                style="vertical-align: top"
+                show-alpha
+                format="rgb"
+                :format-options="['rgb', 'hex']"
+              />
+            </div>
+          </div>
+          <div class="controlBtns">
+            <div
+              class="controlBtn"
+              @click="saveColorsConfig"
+            >
+              保存
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </simplebar>
-</div>
+      <div class="SettingsPane forbidSelect">
+        <div class="title">
+          其他
+        </div>
+        <div class="content">
+          <div class="Checkbox">
+            <input
+              id="minimizeToTray"
+              v-model="tmpConfig.minimizeToTray"
+              class="input"
+              type="checkbox"
+            >
+            <label
+              for="minimizeToTray"
+              class="label"
+            >关闭窗口后最小化到托盘</label>
+            <label
+              for="minimizeToTray"
+              class="checkmark"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12l5 5L20 7" />
+              </svg>
+            </label>
+          </div>
+          <div class="controlBtns">
+            <div
+              class="controlBtn"
+              @click="saveOtherConfig"
+            >
+              保存
+            </div>
+          </div>
+        </div>
+      </div>
+    </simplebar>
+  </div>
 </template>
 
 <style scoped>

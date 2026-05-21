@@ -4,10 +4,12 @@ defineProps(['text'])
 </script>
 
 <template>
-<div class="TooltipContainer">
-  <div class="tooltipText">{{text}}</div>
-  <slot></slot>
-</div>
+  <div class="TooltipContainer">
+    <div class="tooltipText">
+      {{ text }}
+    </div>
+    <slot />
+  </div>
 </template>
 
 <style scoped>

@@ -316,6 +316,7 @@ class NeteaseSource extends MusicSource {
       })
       return r.code === 200;
     } catch (error) {
+      console.error(`[${this.id}] 订阅歌单失败: ${(error as Error).message}`);
       return false;
     }
   }

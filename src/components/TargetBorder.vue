@@ -1,15 +1,19 @@
 <template>
-<div class="fixedContainer"> <!--保证定位-->
-    <Transition appear name="tb_appear">
-    <div class="tb_container">
-        <div class="tb_b tb_left"></div>
-        <div class="tb_b tb_right"></div>
-        <div class="tb_b tb_top"></div>
-        <div class="tb_b tb_bottom"></div>
-        <slot></slot>
-    </div>
-</Transition>
-</div>
+  <div class="fixedContainer">
+    <!--保证定位-->
+    <Transition
+      appear
+      name="tb_appear"
+    >
+      <div class="tb_container">
+        <div class="tb_b tb_left" />
+        <div class="tb_b tb_right" />
+        <div class="tb_b tb_top" />
+        <div class="tb_b tb_bottom" />
+        <slot />
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <script setup lang='ts'>
