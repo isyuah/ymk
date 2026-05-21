@@ -65,6 +65,7 @@ jobs:
 
       - name: Notify Discord
         if: always()
+        shell: bash
         run: |
           STATUS="${{ job.status }}"
           if [ "$STATUS" = "success" ]; then
