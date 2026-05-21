@@ -102,14 +102,14 @@ async function onContextMenu(e: MouseEvent, playlist: RuntimePlaylist, groupInde
       title: '重命名',
       show: hasRename,
       action: ({playlist, sourceType}) => {
-        showDialog(RenamePlaylistDialog, { playlist, sourceType })
+        showDialog(RenamePlaylistDialog, { playlist, sourceType, onConfirm: (name) => { playlist.document.title = name } })
       },
     },
     {
       title: '修改封面',
       show: hasCover,
       action: ({playlist, sourceType}) => {
-        showDialog(ChangeCoverDialog, { playlist, sourceType })
+        showDialog(ChangeCoverDialog, { playlist, sourceType, onConfirm: (pic) => { playlist.document.pic = pic } })
       },
     },
     {
@@ -134,16 +134,41 @@ async function onContextMenu(e: MouseEvent, playlist: RuntimePlaylist, groupInde
 
 <template>
   <div class="root">
-    <div :key="gidx" class="group" v-for="(group, gidx) in playlistGroup" :class="{collapsed: collapsed[gidx]}">
-      <div class="groupTitle" :class="{collapsed: collapsed[gidx]}" @click="collapsed[gidx] = !collapsed[gidx]">
-        <span class="chevron"></span>
-        {{group.title}}
+    <div
+      v-for="(group, gidx) in playlistGroup"
+      :key="gidx"
+      class="group"
+      :class="{collapsed: collapsed[gidx]}"
+    >
+      <div
+        class="groupTitle"
+        :class="{collapsed: collapsed[gidx]}"
+        @click="collapsed[gidx] = !collapsed[gidx]"
+      >
+        <span class="chevron" />
+        {{ group.title }}
       </div>
-      <div class="groupContainer" :class="{collapsed: collapsed[gidx]}">
+      <div
+        class="groupContainer"
+        :class="{collapsed: collapsed[gidx]}"
+      >
         <div class="inner">
-          <div @click="navigateToPlaylistDetail(playlist)" @contextmenu="onContextMenu($event, playlist, gidx)" class="playlistItem" v-for="playlist in group.playlists">
-            <img referrerpolicy="no-referrer" class="playlistImage" :src="playlist.document.pic" alt="">
-            <div class="title">{{playlist.document.title}}</div>
+          <div
+            v-for="(playlist, pi) in group.playlists"
+            :key="pi"
+            class="playlistItem"
+            @click="navigateToPlaylistDetail(playlist)"
+            @contextmenu="onContextMenu($event, playlist, gidx)"
+          >
+            <img
+              referrerpolicy="no-referrer"
+              class="playlistImage"
+              :src="playlist.document.pic"
+              alt=""
+            >
+            <div class="title">
+              {{ playlist.document.title }}
+            </div>
           </div>
         </div>
       </div>

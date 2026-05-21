@@ -22,7 +22,7 @@ class EventEmitter {
         try {
           listener(...args);
         } catch (e) {
-          console.warn(`[emitter] ${listener} failed to emit listener: ${listener}`);
+          console.warn(`[emitter] ${listener} failed to emit listener: ${listener}\n Error: ${e instanceof Error ? e.stack : e}`);
         }
       }
     }

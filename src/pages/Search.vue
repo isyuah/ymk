@@ -1,15 +1,28 @@
 <template>
-<div class="partContainer DEF-SONGLIST">
+  <div class="partContainer DEF-SONGLIST">
     <div class="searchBar">
-      <div class="sourceSelector" @click.stop="showSourceSelector = !showSourceSelector">
+      <div
+        class="sourceSelector"
+        @click.stop="showSourceSelector = !showSourceSelector"
+      >
         <div class="currentSource">
           <span>{{ currentSourceLabel }}</span>
-          <svg :class="{ arrow: true, open: showSourceSelector }" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-            <path d="M512 650.24 213.76 352 160 405.76l352 352 352-352L810.24 352z" fill="currentColor" />
+          <svg
+            :class="{ arrow: true, open: showSourceSelector }"
+            viewBox="0 0 1024 1024"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M512 650.24 213.76 352 160 405.76l352 352 352-352L810.24 352z"
+              fill="currentColor"
+            />
           </svg>
         </div>
         <Transition name="fade">
-          <div v-show="showSourceSelector" class="sourceOptions">
+          <div
+            v-show="showSourceSelector"
+            class="sourceOptions"
+          >
             <div
               v-for="op in sourceOptions"
               :key="op.value"
@@ -21,61 +34,144 @@
           </div>
         </Transition>
       </div>
-        <div class="searchInputContainer">
-            <input
-            @focus="showSuggestBar = true"
-            @keydown.enter="search()"
-            @keydown.up.prevent="lastSuggest"
-            @keydown.down.prevent="nextSuggest"
-            @input="refreshSuggests"
-            ref="searchInput" type="text" placeholder="搜索" />
-            <div @click="search()" class="searchButton">
-                <svg t="1711784197878" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4252" width="48" height="48"><path d="M454.198549 856.251462c-53.599755 0-105.60827-10.503215-154.582681-31.216979-47.291073-20.00359-89.75828-48.632627-126.219703-85.095074-36.462446-36.462446-65.092507-78.929654-85.095073-126.220726-20.714787-48.974411-31.216979-100.983949-31.216979-154.583705s10.503215-105.60827 31.218002-154.58268c20.002566-47.291073 48.632627-89.757257 85.095074-126.219703 36.462446-36.462446 78.92863-65.092507 126.219703-85.095074C348.59028 72.522734 400.599817 62.019519 454.198549 62.019519s105.60827 10.503215 154.581658 31.218002c47.291073 20.002566 89.75828 48.632627 126.220726 85.095074 36.462446 36.462446 65.091484 78.92863 85.095074 126.219703 20.713764 48.974411 31.216979 100.983949 31.216979 154.58268 0 102.939487-39.223327 200.536292-110.446462 274.812973-9.487072 9.896394-25.200962 10.223852-35.094286 0.736781-9.894348-9.488095-10.223852-25.199938-0.73678-35.094286 62.317301-64.98813 96.635921-150.383032 96.635921-240.455468 0-191.597713-155.87614-347.473853-347.47283-347.473852s-347.472829 155.87614-347.472829 347.473852S262.60186 806.608831 454.198549 806.608831c32.573883 0 64.808028-4.497431 95.808067-13.369495 13.178137-3.765767 26.921139 3.854794 30.692022 17.033955 3.771907 13.179161-3.854794 26.920116-17.033955 30.692023-35.443233 10.143011-72.272024 15.286148-109.466134 15.286148z" fill="currentColor" p-id="4253"></path><path d="M937.143816 960.063829a24.740474 24.740474 0 0 1-17.725709-7.444553l-214.193337-218.475873c-9.596566-9.788947-9.442046-25.50386 0.3469-35.100426 9.78997-9.598612 25.504884-9.441023 35.100426 0.346901l214.193337 218.475873c9.596566 9.788947 9.442046 25.50386-0.346901 35.100426a24.742521 24.742521 0 0 1-17.374716 7.097652z" fill="currentColor" p-id="4254"></path></svg>
-            </div>
-            <div v-show="showSuggestBar && searchInput!.value && suggests.length" class="suggestBar">
-                <div
-                @click="acceptSuggest(suggest)"
-                v-for="(suggest, index) in suggests" :class="{suggest: true, active: suggestSelected === index}">{{ suggest }}</div>
-            </div>
+      <div class="searchInputContainer">
+        <input
+          ref="searchInput"
+          type="text"
+          placeholder="搜索"
+          @focus="showSuggestBar = true"
+          @keydown.enter="search()"
+          @keydown.up.prevent="lastSuggest"
+          @keydown.down.prevent="nextSuggest"
+          @input="refreshSuggests"
+        >
+        <div
+          class="searchButton"
+          @click="search()"
+        >
+          <svg
+            t="1711784197878"
+            class="icon"
+            viewBox="0 0 1024 1024"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            p-id="4252"
+            width="48"
+            height="48"
+          ><path
+            d="M454.198549 856.251462c-53.599755 0-105.60827-10.503215-154.582681-31.216979-47.291073-20.00359-89.75828-48.632627-126.219703-85.095074-36.462446-36.462446-65.092507-78.929654-85.095073-126.220726-20.714787-48.974411-31.216979-100.983949-31.216979-154.583705s10.503215-105.60827 31.218002-154.58268c20.002566-47.291073 48.632627-89.757257 85.095074-126.219703 36.462446-36.462446 78.92863-65.092507 126.219703-85.095074C348.59028 72.522734 400.599817 62.019519 454.198549 62.019519s105.60827 10.503215 154.581658 31.218002c47.291073 20.002566 89.75828 48.632627 126.220726 85.095074 36.462446 36.462446 65.091484 78.92863 85.095074 126.219703 20.713764 48.974411 31.216979 100.983949 31.216979 154.58268 0 102.939487-39.223327 200.536292-110.446462 274.812973-9.487072 9.896394-25.200962 10.223852-35.094286 0.736781-9.894348-9.488095-10.223852-25.199938-0.73678-35.094286 62.317301-64.98813 96.635921-150.383032 96.635921-240.455468 0-191.597713-155.87614-347.473853-347.47283-347.473852s-347.472829 155.87614-347.472829 347.473852S262.60186 806.608831 454.198549 806.608831c32.573883 0 64.808028-4.497431 95.808067-13.369495 13.178137-3.765767 26.921139 3.854794 30.692022 17.033955 3.771907 13.179161-3.854794 26.920116-17.033955 30.692023-35.443233 10.143011-72.272024 15.286148-109.466134 15.286148z"
+            fill="currentColor"
+            p-id="4253"
+          /><path
+            d="M937.143816 960.063829a24.740474 24.740474 0 0 1-17.725709-7.444553l-214.193337-218.475873c-9.596566-9.788947-9.442046-25.50386 0.3469-35.100426 9.78997-9.598612 25.504884-9.441023 35.100426 0.346901l214.193337 218.475873c9.596566 9.788947 9.442046 25.50386-0.346901 35.100426a24.742521 24.742521 0 0 1-17.374716 7.097652z"
+            fill="currentColor"
+            p-id="4254"
+          /></svg>
         </div>
+        <div
+          v-show="showSuggestBar && searchInput!.value && suggests.length"
+          class="suggestBar"
+        >
+          <div
+            v-for="(suggest, index) in suggests"
+            :key="index"
+            :class="{suggest: true, active: suggestSelected === index}"
+            @click="acceptSuggest(suggest)"
+          >
+            {{ suggest }}
+          </div>
+        </div>
+      </div>
     </div>
     <Transition name="cube">
-      <div class="searchResult" v-show="tmpSearchVal !== ''">
-          <div class="songs searchResultPart OverScrollBehavior-Contain" style="grid-column: span 17">
-            <Transition name="cube">
-              <div v-show="!songLoading" class="container">
-                <simplebar data-auto-hide class="simplebar">
-                  <div class="searchResultSongTable forbidSelect">
-                    <div
-                        @dblclick="tryPlaySong(song)"
-                        @contextmenu.prevent="onSongContextMenu($event, song)"
-                        class="song"
-                        v-for="(song, index) in resultSongList"
-                    >
-                      <div class="songInfo songIndex">{{index+1}}</div>
-                      <div class="songInfo songTitle singleLineTextEl">{{ song.title }}</div>
-                      <div class="songInfo songSinger singleLineTextEl">{{ song.singer }}</div>
+      <div
+        v-show="tmpSearchVal !== ''"
+        class="searchResult"
+      >
+        <div
+          class="songs searchResultPart OverScrollBehavior-Contain"
+          style="grid-column: span 17"
+        >
+          <Transition name="cube">
+            <div
+              v-show="!songLoading"
+              class="container"
+            >
+              <simplebar
+                data-auto-hide
+                class="simplebar"
+              >
+                <div class="searchResultSongTable forbidSelect">
+                  <div
+                    v-for="(song, index) in resultSongList"
+                    :key="index"
+                    class="song"
+                    @dblclick="tryPlaySong(song)"
+                    @contextmenu.prevent="onSongContextMenu($event, song)"
+                  >
+                    <div class="songInfo songIndex">
+                      {{ index+1 }}
+                    </div>
+                    <div class="songInfo songTitle singleLineTextEl">
+                      {{ song.title }}
+                    </div>
+                    <div class="songInfo songSinger singleLineTextEl">
+                      {{ song.singer }}
                     </div>
                   </div>
-                </simplebar>
-              </div>
-            </Transition>
-            <Transition name="cube">
-              <Pagination v-show="!paginationLoading" @change-page="changePage" :total="total" :countInPage="songPageSize" v-model:group="nowGroup" v-model="nowPage" class="pagination forbidSelect"></Pagination>
-            </Transition>
-          </div>
+                </div>
+              </simplebar>
+            </div>
+          </Transition>
+          <Transition name="cube">
+            <Pagination
+              v-show="!paginationLoading"
+              v-model:group="nowGroup"
+              v-model="nowPage"
+              :total="total"
+              :count-in-page="songPageSize"
+              class="pagination forbidSelect"
+              @change-page="changePage"
+            />
+          </Transition>
+        </div>
         <Transition name="cube">
-          <div v-if="hasAlbumAbility" class="searchResultPart forbidSelect albums" style="grid-column: span 7">
-            <div class="header">专辑</div>
+          <div
+            v-if="hasAlbumAbility"
+            class="searchResultPart forbidSelect albums"
+            style="grid-column: span 7"
+          >
+            <div class="header">
+              专辑
+            </div>
             <Transition name="cube">
-              <div v-show="!albumLoading" class="main">
-                <div class="albumItem" v-for="album in resultAlbumList" @click="openAlbum(album)">
+              <div
+                v-show="!albumLoading"
+                class="main"
+              >
+                <div
+                  v-for="(album, ai) in resultAlbumList"
+                  :key="ai"
+                  class="albumItem"
+                  @click="openAlbum(album)"
+                >
                   <div class="pic">
-                    <img v-if="album.pic" :src="album.pic" alt="">
+                    <img
+                      v-if="album.pic"
+                      :src="album.pic"
+                      alt=""
+                    >
                   </div>
                   <div class="info singleLineTextEl">
-                    <div class="title singleLineTextEl">{{album.title}}</div>
-                    <div class="intro singleLineTextEl">{{album.artist}} <span style="color: #ccc" v-if="album.songCount">共{{album.songCount}}首</span></div>
+                    <div class="title singleLineTextEl">
+                      {{ album.title }}
+                    </div>
+                    <div class="intro singleLineTextEl">
+                      {{ album.artist }} <span
+                        v-if="album.songCount"
+                        style="color: #ccc"
+                      >共{{ album.songCount }}首</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -83,30 +179,71 @@
           </div>
         </Transition>
         <Transition name="cube">
-          <div v-if="hasArtistAbility" class="searchResultPart forbidSelect singers" style="grid-column: span 12">
-            <div class="header">歌手</div>
+          <div
+            v-if="hasArtistAbility"
+            class="searchResultPart forbidSelect singers"
+            style="grid-column: span 12"
+          >
+            <div class="header">
+              歌手
+            </div>
             <Transition name="cube">
-              <div v-show="!singerLoading" class="main">
-                <div class="singerItem" v-for="singer in resultArtistList" @click="openArtist(singer)">
+              <div
+                v-show="!singerLoading"
+                class="main"
+              >
+                <div
+                  v-for="(singer, si) in resultArtistList"
+                  :key="si"
+                  class="singerItem"
+                  @click="openArtist(singer)"
+                >
                   <div class="pic">
-                    <img referrerpolicy="no-referrer" v-if="singer.pic" :src="singer.pic" alt="">
+                    <img
+                      v-if="singer.pic"
+                      referrerpolicy="no-referrer"
+                      :src="singer.pic"
+                      alt=""
+                    >
                   </div>
-                  <div class="name singleLineTextEl">{{singer.name}}</div>
+                  <div class="name singleLineTextEl">
+                    {{ singer.name }}
+                  </div>
                 </div>
               </div>
             </Transition>
           </div>
         </Transition>
         <Transition name="cube">
-          <div v-if="hasPlaylistAbility" class="searchResultPart forbidSelect playlists" style="grid-column: span 12">
-            <div class="header">歌单</div>
+          <div
+            v-if="hasPlaylistAbility"
+            class="searchResultPart forbidSelect playlists"
+            style="grid-column: span 12"
+          >
+            <div class="header">
+              歌单
+            </div>
             <Transition name="cube">
-              <div v-show="!playlistLoading" class="main">
-                <div class="playlistItem" v-for="p in resultPlaylistList" @click="openPlaylist(p)">
+              <div
+                v-show="!playlistLoading"
+                class="main"
+              >
+                <div
+                  v-for="(p, pi) in resultPlaylistList"
+                  :key="pi"
+                  class="playlistItem"
+                  @click="openPlaylist(p)"
+                >
                   <div class="pic">
-                    <img v-if="p.pic" :src="p.pic" alt="">
+                    <img
+                      v-if="p.pic"
+                      :src="p.pic"
+                      alt=""
+                    >
                   </div>
-                  <div class="name singleLineTextEl">{{p.title}}</div>
+                  <div class="name singleLineTextEl">
+                    {{ p.title }}
+                  </div>
                 </div>
               </div>
             </Transition>
@@ -114,7 +251,7 @@
         </Transition>
       </div>
     </Transition>
-</div>
+  </div>
 </template>
 
 <script setup lang='ts'>

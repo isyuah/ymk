@@ -37,7 +37,7 @@ class KugouSource extends MusicSource {
 
     this.ctx.http.interceptors.request.use((config: any) => {
       config.params = config.params || {};
-      config.method === "post" && (config.data = config.data || {});
+      if (config.method === "post") config.data = config.data || {};
       const token = this.ctx.storage.get<string>("auth");
       const uid = this.ctx.storage.get<string>("uid");
       if (token) {

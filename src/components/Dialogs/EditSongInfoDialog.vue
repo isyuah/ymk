@@ -1,23 +1,50 @@
 <template>
   <div class="editSongDialogContainer DEF-DIALOG-CONTENT">
-    <div class="header">编辑歌曲信息</div>
+    <div class="header">
+      编辑歌曲信息
+    </div>
     <div class="content">
       <div class="field">
         <label>标题</label>
-        <input v-model="title" type="text" class="fieldInput" @keyup.enter="confirm" />
+        <input
+          v-model="title"
+          type="text"
+          class="fieldInput"
+          @keyup.enter="confirm"
+        >
       </div>
       <div class="field">
         <label>歌手</label>
-        <input v-model="singer" type="text" class="fieldInput" @keyup.enter="confirm" />
+        <input
+          v-model="singer"
+          type="text"
+          class="fieldInput"
+          @keyup.enter="confirm"
+        >
       </div>
       <div class="field">
         <label>封面</label>
-        <input v-model="pic" type="text" class="fieldInput" @keyup.enter="confirm" />
+        <input
+          v-model="pic"
+          type="text"
+          class="fieldInput"
+          @keyup.enter="confirm"
+        >
       </div>
     </div>
     <div class="footer">
-      <button @click="confirm" class="dialogBtn confirm">确认</button>
-      <button @click="closeDialog" class="dialogBtn cancel">取消</button>
+      <button
+        class="dialogBtn confirm"
+        @click="confirm"
+      >
+        确认
+      </button>
+      <button
+        class="dialogBtn cancel"
+        @click="closeDialog"
+      >
+        取消
+      </button>
     </div>
   </div>
 </template>
@@ -34,6 +61,7 @@ const props = defineProps<{
     song: SongBase
     playlist: RuntimePlaylist
     sourceType: string
+    onConfirm?: (info: { title: string; singer: string; pic: string }) => void
   }
 }>()
 
@@ -46,15 +74,14 @@ async function confirm() {
     const source = sourceRegistry.sources.get(props.data.sourceType)
     const ability = source?.getAvailability('editSongInfo')
     if (ability?.available) {
-      await ability.invoke(props.data.song, props.data.playlist, {
+      const info = {
         title: title.value,
         singer: singer.value,
         pic: pic.value,
-      })
+      }
+      await ability.invoke(props.data.song, props.data.playlist, info)
       showMessage('修改成功')
-      props.data.song.title = title.value
-      props.data.song.singer = singer.value
-      props.data.song.pic = pic.value
+      props.data.onConfirm?.(info)
       props.closeDialog()
     }
   } catch (e) {

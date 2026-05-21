@@ -65,9 +65,18 @@ onUnmounted(stopPolling);
 
 <template>
   <div class="qrcodeLogin">
-    <div class="text">请扫码登录</div>
-    <img v-if="qrUrl" :src="qrUrl" referrerpolicy="no-referrer" alt="QR Code" />
-    <div class="text">{{ status }}</div>
+    <div class="text">
+      请扫码登录
+    </div>
+    <img
+      v-if="qrUrl"
+      :src="qrUrl"
+      referrerpolicy="no-referrer"
+      alt="QR Code"
+    >
+    <div class="text">
+      {{ status }}
+    </div>
   </div>
 </template>
 

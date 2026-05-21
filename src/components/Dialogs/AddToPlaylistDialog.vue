@@ -1,23 +1,43 @@
 <template>
   <div class="addToPlaylistDialog DEF-DIALOG-CONTENT">
-    <div class="header">添加到歌单</div>
+    <div class="header">
+      添加到歌单
+    </div>
     <div class="content">
-      <div v-if="targets.length === 0" class="empty">没有可用的歌单</div>
+      <div
+        v-if="targets.length === 0"
+        class="empty"
+      >
+        没有可用的歌单
+      </div>
       <div
         v-for="(item, i) in targets"
         :key="i"
         class="playlistItem"
         @click="addTo(item)"
       >
-        <img v-if="item.pic" :src="item.pic" class="itemPic" />
+        <img
+          v-if="item.pic"
+          :src="item.pic"
+          class="itemPic"
+        >
         <div class="itemInfo">
-          <div class="itemTitle">{{ item.title }}</div>
-          <div class="itemSource">{{ item.sourceName }}</div>
+          <div class="itemTitle">
+            {{ item.title }}
+          </div>
+          <div class="itemSource">
+            {{ item.sourceName }}
+          </div>
         </div>
       </div>
     </div>
     <div class="footer">
-      <button @click="closeDialog" class="dialogBtn cancel">取消</button>
+      <button
+        class="dialogBtn cancel"
+        @click="closeDialog"
+      >
+        取消
+      </button>
     </div>
   </div>
 </template>

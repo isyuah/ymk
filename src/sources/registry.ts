@@ -1,4 +1,5 @@
-import type {MusicSource, ParsedAbility, SourceCapabilityMap} from "@/sources/musicSource";
+import type {MusicSource} from "@/sources/musicSource";
+import type {ParsedAbility, SourceCapabilityMap} from "@yumuzk/plugin-api";
 import {SourceContext} from "@/sources/context";
 
 class SourceRegistry {
@@ -19,7 +20,7 @@ class SourceRegistry {
   listByCapability(key: keyof SourceCapabilityMap) {
     return [...this.sources.values()].filter(src => src.getAvailability(key).available);
   }
-  getSourceAbility<T extends keyof SourceCapabilityMap>(source: string, key: T) {
+  getSourceAbility<T extends keyof SourceCapabilityMap>(source: string, key: T): ParsedAbility<SourceCapabilityMap[T] extends import('@yumuzk/plugin-api').SourceAbility<infer F extends (...args: any) => any> ? F : never> | null {
     if (!this.sources.has(source)) {
       return null;
     }

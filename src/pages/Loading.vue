@@ -1,17 +1,22 @@
 <template>
   <div class="partContainer">
-    <div class="text">Loading</div>
+    <div class="text">
+      Loading
+    </div>
     <div class="message">
       <TransitionGroup name="list">
         <div
-            v-for="(item, index) in loadingStore.loadingStack"
-            :key="index"
-            class="tipMessage"
-            :class="{ 'sub-item': index > 0 }"
-            :style="{ '--index': index }"
+          v-for="(item, index) in loadingStore.loadingStack"
+          :key="index"
+          class="tipMessage"
+          :class="{ 'sub-item': index > 0 }"
+          :style="{ '--index': index }"
         >
-          <div v-if="index > 0" class="tree-line"></div>
-          <div class="status-dot"></div>
+          <div
+            v-if="index > 0"
+            class="tree-line"
+          />
+          <div class="status-dot" />
           <span class="content">{{ item.text }}</span>
         </div>
       </TransitionGroup>

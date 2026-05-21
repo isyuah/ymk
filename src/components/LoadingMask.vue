@@ -1,8 +1,8 @@
 <template>
-<div class="loadingMaskContainer">
-    <div :class="{mask: true, active: loading}"></div>
-    <slot></slot>
-</div>
+  <div class="loadingMaskContainer">
+    <div :class="{mask: true, active: loading}" />
+    <slot />
+  </div>
 </template>
 
 <script setup lang='ts'>

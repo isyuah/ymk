@@ -6,9 +6,13 @@ const authSources = sourceRegistry.filter(s => !!s.auth);
 </script>
 
 <template>
-<div class="UserCenterContainer">
-  <SourceAuthCard v-for="source in authSources" :key="source.id" :source="source" />
-</div>
+  <div class="UserCenterContainer">
+    <SourceAuthCard
+      v-for="source in authSources"
+      :key="source.id"
+      :source="source"
+    />
+  </div>
 </template>
 
 <style scoped>

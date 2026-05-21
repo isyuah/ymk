@@ -1,12 +1,29 @@
 <template>
   <div class="renameDialogContainer DEF-DIALOG-CONTENT">
-    <div class="header">重命名歌单</div>
+    <div class="header">
+      重命名歌单
+    </div>
     <div class="content">
-      <input v-model="newName" type="text" class="renameInput" @keyup.enter="confirm" />
+      <input
+        v-model="newName"
+        type="text"
+        class="renameInput"
+        @keyup.enter="confirm"
+      >
     </div>
     <div class="footer">
-      <button @click="confirm" class="dialogBtn confirm">确认</button>
-      <button @click="closeDialog" class="dialogBtn cancel">取消</button>
+      <button
+        class="dialogBtn confirm"
+        @click="confirm"
+      >
+        确认
+      </button>
+      <button
+        class="dialogBtn cancel"
+        @click="closeDialog"
+      >
+        取消
+      </button>
     </div>
   </div>
 </template>
@@ -23,6 +40,7 @@ const props = defineProps<{
   data: {
     playlist: RuntimePlaylist
     sourceType: string
+    onConfirm?: (name: string) => void
   }
 }>()
 
@@ -36,7 +54,7 @@ async function confirm() {
     if (ability?.available) {
       const ref = getRef()
       await ability.invoke(ref, props.data.playlist, newName.value.trim())
-      props.data.playlist.document.title = newName.value.trim()
+      props.data.onConfirm?.(newName.value.trim())
       showMessage('重命名成功')
       props.closeDialog()
     }

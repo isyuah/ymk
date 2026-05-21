@@ -1,7 +1,18 @@
 <template>
-  <div ref="progresscontainer" @click="handleProgressClick" class="progressbar">
-    <div class="progressfill" ref="progressfill" :style="{width: `${progress}%`}"></div>
-    <div ref="progresstip" class="progresstip"></div>
+  <div
+    ref="progresscontainer"
+    class="progressbar"
+    @click="handleProgressClick"
+  >
+    <div
+      ref="progressfill"
+      class="progressfill"
+      :style="{width: `${progress}%`}"
+    />
+    <div
+      ref="progresstip"
+      class="progresstip"
+    />
   </div>
 </template>
 

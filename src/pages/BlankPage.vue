@@ -3,7 +3,7 @@
 </script>
 
 <template>
-<div class="partContainer"></div>
+  <div class="partContainer" />
 </template>
 
 <style scoped>
