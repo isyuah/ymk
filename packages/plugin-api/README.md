@@ -24,6 +24,10 @@ YMK 音乐源插件开发 SDK。通过继承 `MusicSource` 抽象类，你可以
 
 ## 快速开始
 
+```bash
+npm install @yumuzk/plugin-api
+```
+
 ```ts
 import { MusicSource, type SourceCapabilityMap, type SongBase, SourceEntityType } from '@yumuzk/plugin-api';
 

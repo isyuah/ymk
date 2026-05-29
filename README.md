@@ -29,7 +29,7 @@ Yumuzk 是一个基于 **Electron + Vue 3 + Vite + TypeScript** 的桌面音乐�
 
 ### 本地歌单
 
-- 从 `res/lists/*.json` 读取本地歌单
+- 从用户数据目录的 `res/lists/*.json` 读取本地歌单
 - 导入本地 JSON 歌单
 - 删除本地歌单
 - 给本地歌单添加歌曲
@@ -93,7 +93,7 @@ pnpm install
 | `pnpm build-only` | 构建前端资源 |
 | `pnpm package` | 执行 Electron Forge package |
 | `pnpm make` | 执行 Electron Forge make |
-| `pnpm build` | 依次执行 `build-only -> package -> clean -> makes` |
+| `pnpm build` | 依次执行 `sdk:build -> build-only -> make`（与 CI 一致） |
 
 开发模式下主窗口会加载 `http://localhost:5201`；打包模式下加载本地 `dist/index.html`。桌面歌词窗口对应单独的 `lyric.html` 构建入口。
 
@@ -109,12 +109,23 @@ pnpm install
 | `utils/` | 主进程 / 通用工具 |
 | `NeteaseCloudMusicApi/` | 仓库内的网易云 API 代码 |
 | `KuGouMusicApi/` | 仓库内的酷狗 API 代码 |
-| `res/` | 运行时配置与本地歌单目录 |
+| `res/` | 运行时配置与本地歌单目录（实际位于各平台用户数据目录，见下方说明） |
 | `release/` | 打包相关脚本与输出目录 |
+
+## 运行时数据与插件目录
+
+- **运行时数据 `res/`**：存放于各平台用户数据目录（`app.getPath('userData')`，应用名为 `yumuzk`），开发与生产共用同一份，覆盖安装也不会被清除。
+  - Windows：`%APPDATA%/yumuzk/res/`
+  - macOS：`~/Library/Application Support/yumuzk/res/`
+  - Linux：`~/.config/yumuzk/res/`
+  - 包含：`config.json`、`colors.json`、`source-storage.json`、`lists/`
+- **插件目录 `plugins/`**：跟随程序所在目录。
+  - 打包后：可执行文件同级目录（如安装在 `X/yumuzk`，则为 `X/yumuzk/plugins`）
+  - 开发模式：项目根目录下的 `plugins/`
 
 ## 其他说明
 
-- 应用启动时会自动确保以下路径 / 文件存在：`res/`、`res/lists/`、`res/config.json`、`res/colors.json`
+- 应用启动时会自动确保以下路径 / 文件存在（位于用户数据目录）：`res/`、`res/lists/`、`res/config.json`、`res/colors.json`、`res/source-storage.json`
 - 仓库里已经包含网易云与酷狗对应的本地 API 代码
 - QQ 相关能力在项目里有接入点，但接口地址需要在设置页单独配置
 - 仓库中已有 GitHub Actions 发布工作流：推送 `v*` tag 后会执行安装、构建、打包，并发布 `release/make/**`
