@@ -71,6 +71,8 @@ jobs:
       - name: Notify Discord
         if: always()
         shell: bash
+        env:
+          DISCORD_HOOK_URL: ${{ secrets.DISCORD_HOOK_URL }}
         run: |
           STATUS="${{ job.status }}"
           curl -s -X POST "$DISCORD_HOOK_URL" \

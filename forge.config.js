@@ -56,7 +56,8 @@ export default {
       platforms: ['linux'],
       config: {
         options: {
-          categories: 'Audio'
+          categories: 'Audio',
+          description: 'Yumuzk Music Player'
         }
       }
     }
