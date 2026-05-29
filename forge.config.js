@@ -51,15 +51,15 @@ export default {
       name: '@electron-forge/maker-zip',
       config: {}
     },
-    // {
-      // name: '@electron-forge/maker-deb',
-      // platforms: ['linux'],
-      // config: {
-      //   options: {
-      //     categories: 'Audio'
-      //   }
-      // }
-    // }
+    {
+      name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
+      config: {
+        options: {
+          categories: 'Audio'
+        }
+      }
+    }
   ],
   outDir: "release"
 };
