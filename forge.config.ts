@@ -10,6 +10,7 @@
         const normalized = String(filePath).replace(/\\/g, '/');
         if (normalized.includes('/node_modules/')) {
           if (normalized.includes('/node_modules/@yumuzk/')) return true;
+          if (normalized.includes('/node_modules/.bin/')) return true;
           return false;
         }
         const ignorePatterns = [
