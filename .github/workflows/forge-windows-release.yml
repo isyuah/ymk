@@ -2,10 +2,11 @@ name: Forge Pack Clean Make (Windows)
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -34,6 +35,10 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -47,6 +52,7 @@ jobs:
         run: pnpm make
 
       - name: Upload artifact (release/make)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: Yumuzk-make-${{ runner.os }}-${{ github.ref_name }}
@@ -66,33 +72,24 @@ jobs:
       - name: Notify Discord
         if: always()
         shell: bash
+        env:
+          DISCORD_HOOK_URL: ${{ secrets.DISCORD_HOOK_URL }}
         run: |
           STATUS="${{ job.status }}"
-          if [ "$STATUS" = "success" ]; then
-            EMOJI="✅"
-            COLOR="5763719"
-          elif [ "$STATUS" = "failure" ]; then
-            EMOJI="❌"
-            COLOR="15548997"
-          else
-            EMOJI="⚠️"
-            COLOR="16776960"
-          fi
           curl -s -X POST "$DISCORD_HOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg emoji "$EMOJI" \
-              --arg color "$COLOR" \
               --arg status "$STATUS" \
               --arg repo "${{ github.repository }}" \
               --arg ref "${{ github.ref_name }}" \
               --arg sha "$(echo '${{ github.sha }}' | cut -c1-7)" \
               --arg actor "${{ github.actor }}" \
               --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{
+              '(if $status == "success" then {emoji: "✅", color: 5763719} elif $status == "failure" then {emoji: "❌", color: 15548997} else {emoji: "⚠️", color: 16776960} end) as $sc |
+              {
                 embeds: [{
-                  title: "\($emoji) [\($repo)] Build \($status)",
-                  color: ($color | tonumber),
+                  title: "\($sc.emoji) [\($repo)] Build \($status)",
+                  color: $sc.color,
                   fields: [
                     { name: "Branch/Tag", value: "\($ref)", inline: true },
                     { name: "Commit", value: "`\($sha)`", inline: true },
@@ -102,5 +99,14 @@ jobs:
                   url: "\($run_url)"
                 }]
               }')"
+
+      - name: Notify Discord (commit message)
+        if: always() && runner.os == 'Linux'
+        shell: bash
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B HEAD)
+          curl -s -X POST "$DISCORD_HOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg msg "$COMMIT_MSG" '{content: "\($msg)"}')"
         env:
           DISCORD_HOOK_URL: ${{ secrets.DISCORD_HOOK_URL }}

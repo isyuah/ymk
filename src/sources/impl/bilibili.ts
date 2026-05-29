@@ -3,6 +3,7 @@ import {
   defineAuth,
   type AbabityReturn,
   type MyPlaylistGroup,
+  type ResolvedLyric,
   type ResolvedPlayback,
   type ResolvedPlaylist,
   type SearchArtistItem,
@@ -21,6 +22,7 @@ import QRCode from "qrcode";
 const PROXY_URL = "http://localhost:35652/";
 const NAV_URL = "https://api.bilibili.com/x/web-interface/nav";
 const VIEW_URL = "https://api.bilibili.com/x/web-interface/view";
+const PLAYER_V2_URL = "https://api.bilibili.com/x/player/v2";
 const PLAYURL_URL = "https://api.bilibili.com/x/player/wbi/playurl";
 const FAV_LIST_URL = "https://api.bilibili.com/x/v3/fav/resource/list";
 const SEARCH_TYPE_URL = "https://api.bilibili.com/x/web-interface/wbi/search/type";
@@ -186,7 +188,14 @@ class BilibiliSource extends MusicSource {
     // ---- 以下待实现 ----
     resolveAlbum: { available: false, reason: "未实现" },
     resolveArtist: { available: false, reason: "未实现" },
-    resolveLyric: { available: false, reason: "Bilibili 视频暂无歌词支持" },
+    resolveLyric: {
+      available: () => {
+        const auth = this.ctx.storage.get<string[]>("auth");
+        return !!(auth && auth.length);
+      },
+      reason: "Bilibili AI 字幕需登录",
+      invoke: (ref) => this.resolveLyric(ref as SourceEntityRef<BiliExtra>),
+    },
     searchSongs: {
       available: true,
       invoke: (kw, page, pageSize) => this.searchSongs(kw, page, pageSize),
@@ -406,6 +415,62 @@ class BilibiliSource extends MusicSource {
         pic: coverPic,
       },
     } satisfies AbabityReturn<"resolvePlaylist">;
+  }
+
+  async resolveLyric(ref: SourceEntityRef<BiliExtra>): Promise<ResolvedLyric> {
+    try {
+      const auth = this.ctx.storage.get<string[]>("auth");
+      if (!auth?.length) return {};
+
+      const view = await this.proxy<any>({
+        url: VIEW_URL,
+        method: "get",
+        params: { bvid: ref.symbol },
+      });
+      const data = view?.data;
+      if (!data) return {};
+
+      const p = ref.extra?.p;
+      const cid =
+        p !== undefined && Array.isArray(data.pages)
+          ? data.pages[p - 1]?.cid
+          : data.cid;
+      if (!cid) return {};
+
+      const playerR = await this.proxy<any>({
+        url: PLAYER_V2_URL,
+        method: "get",
+        params: { bvid: ref.symbol, cid },
+      });
+
+      const subtitles = playerR?.data?.subtitle?.subtitles;
+      if (!subtitles?.length) return {};
+
+      const subtitleUrl: string | undefined = subtitles[0].subtitle_url;
+      if (!subtitleUrl) return {};
+
+      const fullUrl = subtitleUrl.startsWith("//") ? "https:" + subtitleUrl : subtitleUrl;
+      const subtitleR = await this.proxy<any>({
+        url: fullUrl,
+        method: "get",
+      });
+
+      const body: any[] | undefined = subtitleR?.body;
+      if (!body?.length) return {};
+
+      return {
+        origin: {
+          enableAutoScroll: true,
+          items: body.map((item) => ({
+            time: item.from,
+            text: [item.content.replace(/[♪♫♬]/g, "").trim()],
+          })),
+        },
+      };
+    } catch (e: any) {
+      console.warn(`[bilibili] 获取字幕失败: ${e?.message ?? e}`);
+      return {};
+    }
   }
 
   async checkSongPlayable(ref: SourceEntityRef): Promise<SongPlayable> {
