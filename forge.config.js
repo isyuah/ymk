@@ -2,6 +2,7 @@ export default {
   packagerConfig: {
     appBundleId: "top.isyuah.dev",
     name: 'Yumuzk',
+    executableName: 'Yumuzk',
     icon: "./logo",
     ignore: (filePath) => {
       const normalized = String(filePath).replace(/\\/g, '/');
