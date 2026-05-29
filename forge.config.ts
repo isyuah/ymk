@@ -1,3 +1,5 @@
+import type { ForgeConfig } from '@electron-forge/shared-types';
+
 export default {
   packagerConfig: {
     appBundleId: "top.isyuah.dev",
@@ -58,10 +60,11 @@ export default {
       config: {
         options: {
           categories: 'Audio',
-          description: 'Yumuzk Music Player'
+          description: 'Yumuzk Music Player',
+          executableName: "Yumuzk"
         }
       }
     }
   ],
   outDir: "release"
-};
+} satisfies ForgeConfig;
