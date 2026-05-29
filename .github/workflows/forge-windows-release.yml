@@ -52,6 +52,7 @@ jobs:
         run: pnpm make
 
       - name: Upload artifact (release/make)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: Yumuzk-make-${{ runner.os }}-${{ github.ref_name }}
