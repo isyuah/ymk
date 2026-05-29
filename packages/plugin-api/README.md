@@ -13,7 +13,12 @@ YMK 音乐源插件开发 SDK。通过继承 `MusicSource` 抽象类，你可以
 - [能力列表](#能力列表)
 - [关键类型](#关键类型)
 - [完整示例](#完整示例)
-- [插件注册约定](#插件注册约定)
+- [构建、部署与加载](#构建部署与加载)
+  - [插件加载原理](#插件加载原理)
+  - [项目结构](#项目结构-1)
+  - [构建](#构建)
+  - [部署](#部署)
+  - [关于 `using` 关键字](#关于-using-关键字)
 
 ---
 
@@ -686,27 +691,90 @@ export default new DemoSource();
 - 每个插件文件 **必须 export default 一个 `MusicSource` 的实例**（即 `new YourSource()`）
 - 宿主会通过 `import()` 动态加载，并调用 `sourceRegistry.register(source)`
 
-### 文件结构建议
+---
+
+## 构建、部署与加载
+
+理解插件的完整生命周期有助于调试和部署。
+
+### 插件加载原理
+
+YMK 加载第三方插件的流程：
+
+```
+1. main.js（主进程）
+   扫描 plugins/ 目录下的 .js 文件
+   ↓ 读取文件内容，返回 { name, code }
+
+2. preload.js（预加载脚本）
+   将 code 转为 Blob URL
+   ↓ 返回 { name, url }
+
+3. renderer（渲染进程）
+   import(url) 动态加载模块
+   ↓
+   sourceRegistry.register(plugin.default)
+```
+
+> **关键约束**：插件最终通过 `import()` 加载到一个 Blob URL 上下文中运行。这意味着：
+> - 插件必须输出为**单个自包含 JS 文件**，不能有外部 import（Node.js 内置模块、文件系统等均不可用）
+> - `@yumuzk/plugin-api` 必须被打包进产物，宿主不会提供运行时
+
+### 项目结构
 
 ```
 my-ymk-plugin/
 ├── src/
 │   └── index.ts          # 插件入口，export default new YourSource()
-├── package.json           # 依赖 @yumuzk/plugin-api
-└── tsconfig.json
+├── package.json          # @yumuzk/plugin-api 作为 runtime dependency（非 devDependency）
+├── tsconfig.json
+└── dist/
+    └── index.js          # 构建产物：单个自包含 ESM 文件
 ```
 
-### 本地调试
+### 构建
 
-1. 在宿主项目中，把插件目录添加到 `pnpm-workspace.yaml` 的 `packages` 列表（如果使用 pnpm workspace）
-2. 宿主的 `package.json` 中添加本地依赖：`"my-plugin": "workspace:*"`
-3. 宿主需要主动 import 并注册你的插件
+构建产物必须满足以下约束（不限制使用何种打包工具）：
 
-### 构建与发布
+| 约束 | 说明 |
+|------|------|
+| **单个 JS 文件** | 产物是一个文件，无外部 import 或 chunk |
+| **`MusicSource` 被内联** | `@yumuzk/plugin-api` 的代码必须打包进产物，不能作为外部依赖。因此 `@yumuzk/plugin-api` 应放在 `dependencies`（而非 `devDependencies`），确保构建时能被解析 |
+| **ESM 格式** | 宿主通过 `import()` 动态加载，产物必须是 ES Module |
+| **浏览器环境** | 插件运行在 Electron 渲染进程（Chromium），不能依赖 Node.js API |
+| **`export default` 实例** | 入口文件必须 `export default new YourSource()` |
 
-- 插件应该编译为 ESM（`"type": "module"`）
-- TypeScript target 建议设为 `es2022` 或更高（以支持 `using` 关键字）
-- 发布到 npm 时，确保 `package.json` 的 `main`/`module`/`exports` 字段指向编译产物
+### 部署
+
+1. 构建产物 `dist/index.js`
+2. 重命名为有意义的文件名（如 `my-plugin.js`），放入 YMK 安装目录下的 `plugins/` 文件夹
+3. 重启 YMK 即可在来源列表看到新插件
+
+```
+Yumuzk/
+├── Yumuzk.exe
+├── plugins/              ← 插件目录
+│   ├── my-plugin.js
+│   └── another-source.js
+└── resources/
+    └── app/
+        └── ...
+```
+
+> 开发阶段可以直接在源码目录 `e:/proj/ymk/plugins/` 下放置插件文件，启动 dev 模式即可测试。
+
+### 关于 `using` 关键字
+
+源码中推荐使用 `using` 关键字管理 loader 生命周期：
+
+```ts
+{
+  using loader = new this.ctx.loader('加载中...');
+  // ...
+} // 自动调用 loader[Symbol.dispose]()
+```
+
+当 bundler 以 `--target browser` 构建时，`using` 会被编译为 `try-finally` + `Symbol.dispose` 的等价代码，无需额外 polyfill。如果你的构建 target 是旧版浏览器，请确保产物中包含 `Symbol.dispose` 的 polyfill，或改为手动 `try-finally` 模式。
 
 ---
 
