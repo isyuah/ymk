@@ -2,6 +2,7 @@ import {app, BrowserWindow, dialog, ipcMain, net, protocol, screen} from 'electr
 import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 import {checkFolders, checkResources} from "./utils/utils.js";
+import {getListsDir, getPluginsDir, getResDir} from "./utils/paths.js";
 import {startService} from './KuGouMusicApi/server.js'
 import express from "express";
 import process from 'process';
@@ -29,6 +30,9 @@ import fs from "node:fs";
 
 try {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// 统一开发与生产的 userData 目录（如 AppData/Roaming/yumuzk），需在任何 getPath('userData') 之前调用
+app.setName('yumuzk');
 
 let mainWindow = null;
 let lyricWindow = null;
@@ -88,7 +92,7 @@ if (!gotTheLock) {
     })
     proxyServer.listen(35652)
 
-    checkFolders(['./res', './res/lists'])
+    checkFolders([getResDir(), getListsDir()])
     checkResources()
 
     // 自定义协议，给local源
@@ -133,7 +137,7 @@ if (!gotTheLock) {
         ipcMain.handle('readSourceStorage', readSourceStorage);
         ipcMain.handle('saveSourceStorage', saveSourceStorage);
         ipcMain.handle('loadPlugins', () => {
-            const pluginDir = path.resolve(__dirname, 'plugins')
+            const pluginDir = getPluginsDir()
             if (!fs.existsSync(pluginDir)) return []
             return fs.readdirSync(pluginDir)
                 .filter(f => f.endsWith('.js'))
@@ -273,7 +277,7 @@ function showImportPlaylistDialog() {
         if (canceled) return;
         let tasks = filePaths.map(fp => new Promise((resolve, reject) => {
             try {
-                fs.copyFileSync(fp, path.resolve('./res/lists', path.basename(fp)))
+                fs.copyFileSync(fp, path.join(getListsDir(), path.basename(fp)))
                 resolve();
             } catch(err) {
                 reject(err)

@@ -1,6 +1,6 @@
 {
   "name": "@yumuzk/plugin-api",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "YMK music source plugin SDK",
   "type": "module",
   "main": "./dist/index.js",

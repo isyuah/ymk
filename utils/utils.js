@@ -2,12 +2,13 @@ import * as fs from "node:fs";
 import path from "path";
 import * as os from "node:os";
 import {defaultColorsJsonString, defaultConfigJsonString} from './stringResource.js'
+import {getResDir} from './paths.js'
 const tmpPath = os.tmpdir()
 
 
 export function checkFolders(dnArray) {
     for (let i of dnArray) {
-        if (!fs.existsSync(i)) fs.mkdirSync(i);
+        if (!fs.existsSync(i)) fs.mkdirSync(i, {recursive: true});
     }
 }
 export async function startNcmServer() {
@@ -25,10 +26,14 @@ export async function startNcmServer() {
     })
 }
 export function checkResources() {
-    if (!fs.existsSync('./res/config.json')) {
-        fs.writeFileSync('./res/config.json', defaultConfigJsonString)
+    const resDir = getResDir()
+    if (!fs.existsSync(path.join(resDir, 'config.json'))) {
+        fs.writeFileSync(path.join(resDir, 'config.json'), defaultConfigJsonString)
     }
-    if (!fs.existsSync('./res/colors.json')) {
-        fs.writeFileSync('./res/colors.json', defaultColorsJsonString)
+    if (!fs.existsSync(path.join(resDir, 'colors.json'))) {
+        fs.writeFileSync(path.join(resDir, 'colors.json'), defaultColorsJsonString)
+    }
+    if (!fs.existsSync(path.join(resDir, 'source-storage.json'))) {
+        fs.writeFileSync(path.join(resDir, 'source-storage.json'), '{}')
     }
 }
