@@ -37,17 +37,24 @@ app.setName('yumuzk');
 let mainWindow = null;
 let lyricWindow = null;
 
+function showMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+}
+
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
     app.quit()
 } else {
     app.on('second-instance', (event, commandLine, _workingDirectory, _additionalData) => {
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore()
-            mainWindow.focus()
+        showMainWindow();
+
+        const surl = commandLine.find(arg => arg.startsWith('yumuzk://'));
+        if (surl && mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('urlScheme', surl.replace(/^yumuzk:\/\//, '').replace(/\/$/, ''));
         }
-        const surl = commandLine.pop()
-        mainWindow.webContents.send('urlScheme', surl.substring(9, surl.length - 1));
     })
 
     if (process.defaultApp) {

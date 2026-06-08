@@ -6,7 +6,20 @@ import { dirname } from 'path';
 export function initTray(window, app, __dirname) {
     const dirPath = __dirname || dirname(fileURLToPath(import.meta.url));
     const tray = new Tray(path.resolve(dirPath, './logo.png'));
+    const showWindow = () => {
+        if (window.isDestroyed()) return;
+        if (window.isMinimized()) window.restore();
+        window.show();
+        window.focus();
+    };
     const contextMenu = Menu.buildFromTemplate([
+        {
+            label: '显示主窗口',
+            click: showWindow,
+        },
+        {
+            type: 'separator',
+        },
         {
             label: '退出',
             click: () => {
@@ -15,9 +28,8 @@ export function initTray(window, app, __dirname) {
         }
     ]);
     tray.setContextMenu(contextMenu);
-    tray.on('double-click', () => {
-        window.show();
-    });
+    tray.on('click', showWindow);
+    tray.on('double-click', showWindow);
     
     const thumbarButtons = [
         {
