@@ -1,7 +1,7 @@
 import type {SongBase} from "@/sources/musicSource";
 
 interface IEmitter {
-  playSongV2: [song: SongBase, justTry?: boolean];
+  playSongV2: [song: SongBase, justTry?: boolean, noActionWhenNotPlayable?: boolean, playlistIndex?: number];
   [key: string]: any[];
   [key: symbol]: any[];
 }

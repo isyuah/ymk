@@ -87,6 +87,7 @@ class LocalSource extends MusicSource {
           }
         }
         await window.ymkAPI.writePlaylistFile(playlist.metadata.origin.symbol, doc);
+        Object.assign(playlist.document, doc);
       }
     },
     editSongInfo: {
