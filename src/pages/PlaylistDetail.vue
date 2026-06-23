@@ -142,17 +142,18 @@ function goBack() {
   }
 }
 const songsWithPinyin = computed(() => {
-  return runtimeData.currentPlaylist!.songs.map(song => {
+    return runtimeData.currentPlaylist!.songs.map((song, refIndex) => {
     const titlePinyinFull = pinyin(song.title || '', { toneType: 'none', type: 'array' }).join('');
     const singerPinyinFull = pinyin(song.singer || '', { toneType: 'none', type: 'array' }).join('');
     const titlePinyinInitial = pinyin(song.title || '', { toneType: 'none', type: 'array', pattern: 'initial' }).join('');
     const singerPinyinInitial = pinyin(song.singer || '', { toneType: 'none', type: 'array', pattern: 'initial' }).join('');
     
-    return {
-      ...song,
-      titlePinyin: titlePinyinFull,
-      singerPinyin: singerPinyinFull,
-      titlePinyinInitial: titlePinyinInitial,
+      return {
+        ...song,
+        refIndex,
+        titlePinyin: titlePinyinFull,
+        singerPinyin: singerPinyinFull,
+        titlePinyinInitial: titlePinyinInitial,
       singerPinyinInitial: singerPinyinInitial
     };
   });
@@ -176,16 +177,10 @@ let showingSongList = computed(() => {
   } else {
     // 使用拼音搜索
     const searchResults = FuseVal.value.search(filter.value);
-    // 将搜索结果映射回原始歌曲列表
-    return searchResults.map(result => {
-      const originalIndex = runtimeData.currentPlaylist!.songs.findIndex(song =>
-        song.title === result.item.title && song.singer === result.item.singer
-      );
-      return {
-        item: runtimeData.currentPlaylist!.songs[originalIndex],
-        refIndex: originalIndex
-      };
-    });
+    return searchResults.map(result => ({
+      item: runtimeData.currentPlaylist!.songs[result.item.refIndex],
+      refIndex: result.item.refIndex
+    }));
   }
 })
 
@@ -214,7 +209,7 @@ function tryShowMenu({song, si}: {song: SongBase, si: number}) {
     items: [
       {
         title: '播放',
-        action: ({song}) => emitter.emit('playSongV2', song),
+        action: ({song}) => playSong(song),
       },
       {
         title: '添加到歌单',
@@ -259,15 +254,20 @@ function tryShowMenu({song, si}: {song: SongBase, si: number}) {
   })
 }
 
+function cloneSongs(songs: SongBase[]) {
+  return JSON.parse(JSON.stringify(songs)) as SongBase[];
+}
+
 function playAll() {
-  player.playlist = JSON.parse(JSON.stringify(runtimeData.currentPlaylist!.songs))
+  player.playlist = cloneSongs(runtimeData.currentPlaylist!.songs)
   if (!player.playlist.length) {
     return;
   }
   if (player.config.mode === 'rand') {
-    emitter.emit('playSongV2', player.playlist[Math.floor(Math.random() * (player.playlist.length))])
+    const index = Math.floor(Math.random() * (player.playlist.length));
+    emitter.emit('playSongV2', player.playlist[index], false, true, index)
   }else {
-    emitter.emit('playSongV2',player.playlist[0])
+    emitter.emit('playSongV2',player.playlist[0], false, true, 0)
   }
 }
 

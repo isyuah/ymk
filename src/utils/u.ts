@@ -118,3 +118,12 @@ export function proceedKrcText(krcText: string) {
 export function replacePicSizeParam(str: string, size: number = 240) {
     return str.replaceAll("{size}", `${size}`);
 }
+
+export function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  console.log(arr)
+  return arr;
+}
